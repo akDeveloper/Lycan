@@ -19,12 +19,14 @@ class Exception extends \ErrorException
         $this->e_class = get_class($exception);
         $this->e_trace = $exception->getTrace();
         
-        ob_end_clean();
+        $ob_get_status = ob_get_status();
+        if (!empty($ob_get_status)) ob_end_clean();
+
         $file = \Lycan\Action\Controller::$layouts_path . "error_layout.phtml";
         ob_start();
         ob_implicit_flush(0);
-            include $file;
-            $body = ob_get_contents();
+        include $file;
+        $body = ob_get_contents();
         ob_end_clean();
 
         return $body;

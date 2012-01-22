@@ -85,6 +85,7 @@ class Controller
         } catch (\Exception $e ) {
             $ae = new \Lycan\Exception($e->getMessage(), $e->getCode(), $e);
             echo $ae;
+            exit(0);
         }
     }
 
@@ -100,5 +101,9 @@ class Controller
         }
         return $attr;
     }
-    
+
+    public function __destruct()
+    {
+        \Lycan\Support\Logger::stopLogging();
+    } 
 }
