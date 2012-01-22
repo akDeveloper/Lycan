@@ -26,11 +26,12 @@ class Mysql extends \Lycan\Record\Adapter
 
     protected function connect()
     {
-        if ( null === self::$connection ) {
+        if ( null === self::$connection || null === $this->logger) {
             self::$connection = new \mysqli($this->host, $this->user, $this->password, $this->database, $this->port);
             if ( $this->charset ) self::$connection->set_charset($this->charset);
             $filename = APP_PATH . "log" . DS . ENV . ".log";
             $this->logger = new \Lycan\Record\Logger($filename);
+            $this->logger->log(" Connected to " . $this->database . " FROM " . __CLASS__);
         }
         return self::$connection;
     }

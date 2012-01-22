@@ -32,7 +32,6 @@ abstract class Model extends Persistence  implements \SplSubject
      */
     public static $adapter;
 
-
     /**
      * Finder methods
      */
@@ -108,6 +107,11 @@ abstract class Model extends Persistence  implements \SplSubject
         $adapter = "\\Lycan\\Record\\Adapter\\$adapter";
         static::$adapter = new $adapter($options);
 
+    }
+
+    public static function establishConnection($options)
+    {
+        static::setAdapter($options); 
     }
 
 }

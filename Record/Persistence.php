@@ -10,9 +10,10 @@ abstract class Persistence
 
     protected $new_record=true;
 
-    public function __construct($attributes, $new_record=true)
+    public function __construct($attributes=array(), $new_record=true)
     {
-        
+        $this->new_record = $new_record;
+
     }
 
     public function decrement($attribute, $by=1)
