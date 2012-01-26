@@ -24,7 +24,7 @@ class Mysql extends \Lycan\Record\Adapter
         $this->charset        = $options['charset'];
     }
 
-    protected function connect()
+    protected function connection()
     {
         if ( null === self::$connection || null === $this->logger) {
             self::$connection = new \mysqli($this->host, $this->user, $this->password, $this->database, $this->port);
@@ -36,32 +36,33 @@ class Mysql extends \Lycan\Record\Adapter
         return self::$connection;
     }
 
-    public function getQuery($class_name, $options = array())
+    public function getQuery($class_name=null, $options = array())
     {
         return new \Lycan\Record\Query\Mysql($class_name, $options);
     }
 
     public function escapeString($string)
     {
-        return $this->connect()->real_escape_string($string);
+        return $this->connection()->real_escape_string($string);
     }
 
     public function query(\Lycan\Record\Query $query)
     {
         $start = microtime(true);
-        $res = $this->connect()->query($query->getQuery());        
+        $res = $this->connection()->query($query->getQuery());        
 
         $this->logger->logQuery($query, $query->getClassName(), microtime(true) - $start);
 
         if (!$res)
-            throw new \Exception("Error executing query: " . $query . "\n" . $this->connect()->error);
+            throw new \Exception("Error executing query: " . $query . "\n" . $this->connection()->error);
 
         $rows = array();
-        if ( $res !== true ) {
+        $class = $query->getClassName();
+        if ( $res instanceof \mysqli_result ) {
 
             $start = microtime(true);
-            while ($row = $res->fetch_object())
-                $rows[] = $row;
+            while ($row = $res->fetch_assoc())
+                $rows[] = $class::initWith($row);
 
             $this->logger->logFetchTime(microtime(true) - $start);
 
@@ -72,9 +73,10 @@ class Mysql extends \Lycan\Record\Adapter
         }
     }
 
-    public function insert()
+    public function insert(\Lycan\Record\Query $query)
     {
-         
+        $res = $this->query($query);
+        return $res ? $this->connection()->insert_id : false;
     }
 
 }

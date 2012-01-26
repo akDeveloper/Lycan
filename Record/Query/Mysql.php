@@ -63,13 +63,12 @@ class Mysql extends \Lycan\Record\Query
                 $condition = $condition . join(" AND ", $w) . " ) ";
             }
         }            
-        /* Find join tables in conditions example
-         */
+        /* Find join tables in conditions */
         preg_match_all("/([a-z_]+)\.[a-z_]+/", $condition, $match);
         if (isset($match[1][0]))
             $this->_tables_for_join[$match[1][0]] = $match[1][0];
 
-        $this->where .= empty($this->_where) ? $condition : " {$operator} " . $condition;
+        $this->where .= empty($this->where) ? $condition : " {$operator} " . $condition;
         
         return $this;
     }
@@ -90,7 +89,7 @@ class Mysql extends \Lycan\Record\Query
 
     public function from($table)
     {
-        $this->from = $this->un_apostrophe($table);
+        $this->from = $this->unapostrophe($table);
         return $this;
     }
 
@@ -146,6 +145,51 @@ class Mysql extends \Lycan\Record\Query
         return $this->_fetch_data();
     }
 
+    public function compileUpdate($attributes)
+    {
+        if ( empty($this->where) )
+            throw new BadMethodCallException('You must call `where` method before call compileUpdate method');
+        $data = "";
+        foreach ($attributes as $name=>$value) {
+            $data = $this->apostrophe($name) . " = " . $this->quote($this->adapter()->escapeString($value)); 
+        }
+        $this->query = "UPDATE {$this->table()} SET {$data} WHERE {$this->where}";
+        return $this;
+    }
+
+    public function compileInsert($attributes)
+    {
+        $attributes = array_map(array($this,'_prepare_value'),$attributes);
+        $keys = implode(', ', array_keys($attributes));
+        $values = implode(', ', $attributes);
+        $this->query = "INSERT INTO `{$this->table()}` ({$keys}) VALUES ({$values})";
+        return $this; 
+    }
+
+    private function _prepare_value($value)
+    {
+        if (null === $value || "" === $value) {
+            return "NULL";
+        } elseif (!is_numeric($value)){
+            return $this->quote($this->adapter()->escapeString($value));
+        } else {
+            return $value;
+        }
+    }
+
+    public function compileStmtUpdate($attributes)
+    {
+        $data = ""; $binds = array(); $types = "";
+        foreach ($attributes as $name=>$value) {
+            $data = $this->apostrophe($name) . " = ?";
+            $types .= is_float($value) ? 'd' : (is_int($value) ? 'i' : 's');
+            $binds[] = $this->quote($this->adapter()->escapeString($value));
+        }
+        $this->bind_params = array_merge(array($types), $binds);
+        $this->query = "UPDATE {$this->table()} SET {$data} WHERE {$this->where}";
+        return $this;
+    }
+
     private function _fetch_data()
     {
         $this->build_sql();
@@ -185,7 +229,7 @@ class Mysql extends \Lycan\Record\Query
                 $column = $a;
             if (isset($table)) {
                 $select .= $this->apostrophe(trim($table)) . ".";
-                $this->_select_values[$this->un_apostrophe($table)][] = trim($column);
+                $this->_select_values[$this->unapostrophe($table)][] = trim($column);
             }
             $select .= $column . ", ";
         }
@@ -218,7 +262,7 @@ class Mysql extends \Lycan\Record\Query
         return $this->query;
     }
 
-    protected function un_apostrophe($string)
+    protected function unapostrophe($string)
     {
         if ( substr_count($string, '`') == 2 ) 
             return str_replace('`', '', $string);
@@ -231,5 +275,12 @@ class Mysql extends \Lycan\Record\Query
         if ( substr_count($string, '`') == 2 ) return $string;
 
         return '`' . $string . '`';
+    }
+
+    protected function quote($string)
+    {
+        if ( substr_count($string, "'") == 2 ) return $string;
+
+        return "'" . $string . "'";       
     }
 }

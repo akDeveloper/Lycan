@@ -6,11 +6,13 @@ namespace Lycan\Record;
 
 abstract class Model extends Persistence  implements \SplSubject
 {
-    public static $columns = array();
-
-    public static $table;
-
-    public static $primary_key = 'id';
+    /**
+     * Database adapter
+     *
+     * @var \LycanRecord\Adapter
+     * @access public
+     */
+    protected static $adapter;
 
     public static $belongsTo = array();
     
@@ -20,18 +22,29 @@ abstract class Model extends Persistence  implements \SplSubject
     
     public static $hasAndBelongsToMany = array();
 
-    protected $readonly=false;
-
     protected $observers = array();
-    
-    /**
-     * Database adapter
-     *
-     * @var \LycanRecord\Adapter
-     * @access public
-     */
-    public static $adapter;
 
+    private $_observers = array();
+
+    final function __construct($attributes=array(), $options=array()) 
+    {
+        parent::__construct($attributes, $options);
+
+        if ( !empty($this->observers) )
+            foreach( $this->observers as $observer )
+                $this->attach(new $observer());
+        
+    }
+
+    public function __get($attribute)
+    {
+       return $this->attributes[$attribute];
+    }
+
+    public function __set($attribute, $value)
+    {
+        $this->attributes->set($attribute, $value);
+    }
     /**
      * Finder methods
      */
@@ -39,7 +52,7 @@ abstract class Model extends Persistence  implements \SplSubject
     public static function find($as_object=false, $options=array())
     {
         $options = self::_options_for_finder($as_object, $options);
-        #$options = array_merge(array('fetch_method' => 'one'), $options);
+        $options = array_merge($options, array('fetch_method' => 'one'));
         return static::$adapter->getQuery(get_called_class(), $options);
     }
 
@@ -52,11 +65,13 @@ abstract class Model extends Persistence  implements \SplSubject
 
     public static function first($as_object=false, $options=array())
     {
+        $options = array_merge($options, array('fetch_method' => 'one'));
         return self::find($as_object, $options)->first();
     }
 
     public static function last($as_object=false, $options=array())
     {
+        $options = array_merge($options, array('fetch_method' => 'one'));
         return self::find($as_object, $options)->last();
     }
 
@@ -74,17 +89,17 @@ abstract class Model extends Persistence  implements \SplSubject
      */
     public function attach(\SplObserver $observer)
     {
-        $this->observers[get_class($observer)] = $observer;
+        $this->_observers[get_class($observer)] = $observer;
     }
 
     public function detach(\SplObserver $observer)
     {
-        unset( $this->observers[get_class($observer)] );
+        unset( $this->_observers[get_class($observer)] );
     }
 
     public function notify()
     {
-        foreach ( $this->observers as $observer ) {
+        foreach ( $this->_observers as $observer ) {
             $observer->update($this);
         }
     }
@@ -112,6 +127,11 @@ abstract class Model extends Persistence  implements \SplSubject
     public static function establishConnection($options)
     {
         static::setAdapter($options); 
+    }
+
+    public static function getAdapter()
+    {
+        return static::$adapter;
     }
 
 }

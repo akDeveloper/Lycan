@@ -27,22 +27,33 @@ abstract class Query
     protected $as_object;
 
     protected $query;
+
+    protected $bind_params;
     
-    public function __construct($class_name, $options = array())
+    public function __construct($class_name=null, $options = array())
     {
-        $this->class_name = $class_name;
-        $this->table = $class_name::$table;
-        $this->fetch_method = isset($options['fetch_method'])
-            ? $options['fetch_method']
-            : 'all';
-        $this->as_object = isset($options['as_object'])
-            ? $options['as_object']
-            : false;
+        if ($class_name) {
+            $this->class_name = $class_name;
+            
+            $this->table = $class_name::$table;
+            
+            $this->fetch_method = isset($options['fetch_method'])
+                ? $options['fetch_method']
+                : 'all';
+            $this->as_object = isset($options['as_object'])
+                ? $options['as_object']
+                : false;
+        }
     }
 
     public function getQuery()
     {
         return $this->query;
+    }
+
+    public function getBindParams()
+    {
+        return $this->bind_params;
     }
 
     public function getClassName()
@@ -53,7 +64,7 @@ abstract class Query
     protected function adapter()
     {
         $class = $this->class_name;
-        return $class::$adapter;
+        return $class::getAdapter();
     }
 
     abstract public function select($args);

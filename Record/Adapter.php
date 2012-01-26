@@ -53,12 +53,8 @@ abstract class Adapter
      */
     protected $charset;
 
-    abstract protected function connect();
-
-    public static function getConnection()
-    {
-        return self::$connection;
-    }
+    abstract protected function connection();
 
     abstract public function escapeString($string);
+
 }
