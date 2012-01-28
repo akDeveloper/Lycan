@@ -151,8 +151,9 @@ class Mysql extends \Lycan\Record\Query
             throw new BadMethodCallException('You must call `where` method before call compileUpdate method');
         $data = "";
         foreach ($attributes as $name=>$value) {
-            $data = $this->apostrophe($name) . " = " . $this->quote($this->adapter()->escapeString($value)); 
+            $data .= $this->apostrophe($name) . " = " . $this->quote($this->adapter()->escapeString($value)) . ", "; 
         }
+        $data = substr($data, 0, -2);
         $this->query = "UPDATE {$this->table()} SET {$data} WHERE {$this->where}";
         return $this;
     }

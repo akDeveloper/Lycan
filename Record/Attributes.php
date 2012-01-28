@@ -6,19 +6,23 @@ namespace Lycan\Record;
 
 class Attributes implements \Iterator, \ArrayAccess, \Serializable, \Countable
 {
-    protected $class_name;
 
-    protected $new_record;
+    private $_primary_key;
+    
+    private $_columns;
+
+    private $_composers;
 
     private $_storage;
 
     private $_old_values = array();
 
-    public function __construct($class_name, $input=array(), $options=array())
+    public function __construct($columns, $values=array(), $options=array())
     {
-        $this->_storage = $input;
-        $this->class_name = $class_name;
-        if ( isset($options['new_record'])) $this->new_record =  $options['new_record'];
+        $this->_storage = $values;
+        $this->_columns = $columns;
+        if ( isset($options['primary_key'])) $this->_primary_key =  $options['primary_key'];
+        if ( isset($options['composers'])) $this->_composers =  $options['composers'];
     }
 
     public static function initialize($columns, $class_name, $options=array())
@@ -27,7 +31,9 @@ class Attributes implements \Iterator, \ArrayAccess, \Serializable, \Countable
         if (isset($options['new_record']) && $options['new_record'])
             $attributes = array_combine($columns, array_pad(array(), count($columns), null));
 
-        return new self($class_name, $attributes, $options);
+        $options['primary_key'] = $class_name::$primary_key;
+        $options['composers'] = $class_name::$composed_of;
+        return new self($columns, $attributes, $options);
     }
 
     public function assign($new_attributes, $options=array())
@@ -35,17 +41,27 @@ class Attributes implements \Iterator, \ArrayAccess, \Serializable, \Countable
 
         foreach ( $new_attributes as $k=>$v ) {
             if ($this->columnForAttribute($k))
-                $this->new_record 
+                isset($options['new_record']) && $options['new_record']
                 ? $this->set($k, $v)
                 : $this->_storage[$k] = $v;
         }
     }
 
-    public function reload($new_record=null) {
-        if ( $this->new_record && false === $new_record ) {
-            $this->_old_values = array();
-        }
+    public function reload() {
+        $this->_old_values = array();
     }
+
+    /**
+     * TODO: Reserve function for getting attribute values as objects ex.
+     * \DateTime object for date values
+     * or type cast special values like boolean from integer to boolean
+     * etc
+     */
+    public function get($key)
+    {
+       return $this[$key];
+    }
+
 
     public function set($key, $value)
     {
@@ -64,16 +80,17 @@ class Attributes implements \Iterator, \ArrayAccess, \Serializable, \Countable
 
     public function attributesValues($include_primary_key=true, $include_readonly_attributes=true, $attribute_names=null)
     {
+
         if (empty($this->_old_values))  return array();
+
         if ( null === $attribute_names ) $attribute_names = array_keys($this->_storage);
 
         $attrs = array();
-        $class = $this->class_name;
         
         foreach ($attribute_names as $name) {
             $column = $this->columnForAttribute($name);
             if ( array_key_exists($column, $this->_old_values ) && $column 
-                && ($include_primary_key || !($column == $class::$primary_key)))
+                && ($include_primary_key || !($column == $this->_primary_key)))
             {
                 $value = $this[$name];
                 $attrs[$name] = $value;
@@ -85,10 +102,8 @@ class Attributes implements \Iterator, \ArrayAccess, \Serializable, \Countable
 
     public function columnForAttribute($name)
     {
-        $class = $this->class_name;
-        return in_array($name, $class::$columns) ? $name : false;
+        return in_array($name, $this->_columns) ? $name : false;
     }
-
 
     public function keys()
     {

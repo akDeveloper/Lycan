@@ -4,11 +4,17 @@
 
 namespace Lycan\Record;
 
-class Observer implements \SplObserver
+abstract class Observer implements \SplObserver
 {
 
-    public function update(SplSubject $subject)
+    final public function update(\SplSubject $subject)
     {
+    }
+
+    final public function updateSubject(\SplSubject $subject, $method)
+    {
+        if ( method_exists($this, $method) )
+            return $this->$method($subject);
     }
 }
 

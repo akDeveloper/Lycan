@@ -23,6 +23,8 @@ class Controller
     protected $session;
     protected $request;
 
+    protected $logger;
+
     public function __construct(Request $request, Router $router)
     {
         $this->session = $request->getSession();
@@ -33,6 +35,8 @@ class Controller
         $this->layout_path = self::$layouts_path . $this->layout . ".phtml"; 
         $this->template = new View();
         $this->response = new Response();
+        $filename = APP_PATH . "log" . DS . ENV . ".log";
+        $this->logger = new \Lycan\Record\Logger($filename);
     }
 
     public function dispatch()

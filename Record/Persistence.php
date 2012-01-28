@@ -4,38 +4,34 @@
 
 namespace Lycan\Record;
 
-abstract class Persistence 
+class Persistence implements iPersistence 
 { 
     public static $columns = array();
 
     public static $table;
 
     public static $primary_key;
-    
-    protected $attributes=array();
 
+    protected $class;
+    
     protected $new_record=true;
 
     protected $destroyed=false;
 
     protected $readonly=false;
 
-    public function __construct($attributes=array(), $options=array())
+    public $attributes=array();
+    
+    public function __construct($class, $attributes=array(), $options=array())
     {
-        
+        $this->class = $class;
         $this->new_record = isset($options['new_record']) ? $options['new_record'] : true;
         $options['new_record'] = $this->new_record;
-        $this->attributes = Attributes::initialize(static::$columns, get_called_class(), $options);
+        $this->attributes = Attributes::initialize($class::$columns, $class, $options);
 
         if ($attributes)
-            $this->attributes->assign($attributes);
+            $this->attributes->assign($attributes, array('new_record'=>$this->new_record));
     
-    }
-
-    public static function initWith($attributes, $options=array())
-    {
-        $options['new_record'] = false;
-        return new static($attributes, $options);
     }
 
     public function isNewRecord()
@@ -70,7 +66,7 @@ abstract class Persistence
 
     public function save()
     {
-        return $this->_create_or_update();
+        return $this->create_or_update();
     }
 
     public function updateAttribute($name, $value)
@@ -105,47 +101,53 @@ abstract class Persistence
 
     public function destroy()
     {
-    
+        $this->destroyed = true;
     }
 
     protected function id()
     {
-        return $this->attributes[static::$primary_key];
+        $class = $this->class;
+        return $this->attributes[$class::$primary_key];
     }
 
     protected function setId($id)
     {
-        $this->attributes[static::$primary_key] = $id;
+        $class = $this->class;
+        $this->attributes[$class::$primary_key] = $id;
     }
 
-    private function _create_or_update()
+    protected function create_or_update()
     {
-        $result = $this->new_record ? $this->_create() : $this->_update(); 
+        $result = $this->new_record ? $this->create() : $this->update();
         return $result != false;
     }
 
-    private function _update($attribute_names=null)
+    public function update($attribute_names=null)
     {
+        $class = $this->class;
         if ( null === $attribute_names ) $attribute_names = $this->attributes->keys();
         $attributes_with_values =  $this->attributes->attributesValues(false, false, $attribute_names);
         if ( empty($attributes_with_values) ) return 1;
-
-        $query = static::find()->where(array(static::$primary_key => $this->id()))->compileUpdate($attributes_with_values);
-        return static::$adapter->query($query);
+        
+        $query = $class::find()->where(array($class::$primary_key => $this->id()))->compileUpdate($attributes_with_values);
+        $res = $class::getAdapter()->query($query);
+        $this->attributes->reload(); 
+        return $res;
     }
 
-    private function _create()
+    public function create()
     {
+        $class = $this->class;
         $attributes_with_values =  $this->attributes->attributesValues(!is_null($this->id()));
 
-        $query  = static::$adapter->getQuery(get_called_class())->compileInsert($attributes_with_values);
-        $new_id = static::$adapter->insert($query);
+        $query  = $class::getAdapter()->getQuery(get_called_class())->compileInsert($attributes_with_values);
+        $new_id = $class::getAdapter()->insert($query);
 
-        if (static::$primary_key)
+        if ($class::$primary_key)
             $this->id() ?: $this->setId($new_id);
 
         $this->new_record = false;
-        $this->attributes->reload(false); 
+        $this->attributes->reload(); 
         return $this->id();
     }
 

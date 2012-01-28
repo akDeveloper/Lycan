@@ -4,7 +4,7 @@
 
 namespace Lycan\Record;
 
-abstract class Model extends Persistence  implements \SplSubject
+abstract class Model extends Callbacks implements \SplSubject
 {
     /**
      * Database adapter
@@ -26,25 +26,39 @@ abstract class Model extends Persistence  implements \SplSubject
 
     private $_observers = array();
 
+    protected $persistence;
+
+    protected $logger;
+
     final function __construct($attributes=array(), $options=array()) 
     {
-        parent::__construct($attributes, $options);
-
+        #parent::__construct($attributes, $options);
+        $this->persistence = new Persistence(get_called_class(),$attributes, $options);
+        
         if ( !empty($this->observers) )
             foreach( $this->observers as $observer )
                 $this->attach(new $observer());
         
+        $this->logger = new \Lycan\Record\Logger();
+        
+    }
+
+    public static function initWith($attributes, $options=array())
+    {
+        $options['new_record'] = false;
+        return new static($attributes, $options);
     }
 
     public function __get($attribute)
     {
-       return $this->attributes[$attribute];
+        return $this->persistence->attributes->get($attribute);
     }
 
     public function __set($attribute, $value)
     {
-        $this->attributes->set($attribute, $value);
+        $this->persistence->attributes->set($attribute, $value);
     }
+
     /**
      * Finder methods
      */
@@ -99,27 +113,21 @@ abstract class Model extends Persistence  implements \SplSubject
 
     public function notify()
     {
+    }
+
+    public function notifySubject($method)
+    {
         foreach ( $this->_observers as $observer ) {
-            $observer->update($this);
+            $observer->updateSubject($this, $method);
         }
     }
 
-    
-
-    /**
-     * @params array $options options hash for database connection and database 
-     *                        adapter. Accepted variables for hash are:
-     *                        host, port, user, password, database, charset, 
-     *                        adapter.
-     *                         
-     */
-    public static function setAdapter($options)
+    public static function setAdapter($type, $options)
     {
-        $adapter = isset($options['adapter']) ? $options['adapter'] : null;
-        if ( null === $adapter )
-            throw new \InvalidArgumentException('You should define an adapter to $options hash.');
+        if ( null === $type )
+            throw new \InvalidArgumentException('You should define an adapter type and $options for setup.');
 
-        $adapter = "\\Lycan\\Record\\Adapter\\$adapter";
+        $adapter = "\\Lycan\\Record\\Adapter\\$type";
         static::$adapter = new $adapter($options);
 
     }
