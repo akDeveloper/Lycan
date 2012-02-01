@@ -12,9 +12,9 @@ class Mysql extends \Lycan\Record\Adapter
      * @var \Lycan\Support\Logger
      * @access protected
      */
-    protected $logger;
+    public $logger;
 
-    public function __construct($options)
+    public function __construct($options, $pool='default')
     {
         $this->host           = $options['host'];
         $this->port           = $options['port'];
@@ -26,14 +26,14 @@ class Mysql extends \Lycan\Record\Adapter
 
     protected function connection()
     {
-        if ( null === self::$connection || null === $this->logger) {
-            self::$connection = new \mysqli($this->host, $this->user, $this->password, $this->database, $this->port);
-            if ( $this->charset ) self::$connection->set_charset($this->charset);
+        if ( null === $this->connection || null === $this->logger) {
+            $this->connection = new \mysqli($this->host, $this->user, $this->password, $this->database, $this->port);
+            if ( $this->charset ) $this->connection->set_charset($this->charset);
             $filename = APP_PATH . "log" . DS . ENV . ".log";
             $this->logger = new \Lycan\Record\Logger($filename);
             $this->logger->log(" Connected to " . $this->database . " FROM " . __CLASS__);
         }
-        return self::$connection;
+        return $this->connection;
     }
 
     public function getQuery($class_name=null, $options = array())

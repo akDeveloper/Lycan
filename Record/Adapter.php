@@ -12,7 +12,7 @@ abstract class Adapter
      * @var Resource
      * @access protected
      */
-    protected static $connection;
+    protected $connection;
 
     /**
      * Database host name
