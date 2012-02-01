@@ -4,6 +4,8 @@
 
 namespace Lycan\Record;
 
+require_once __DIR__ . DS . 'Exceptions.php';
+
 abstract class Model extends Callbacks implements \SplSubject
 {
     /**
@@ -14,6 +16,14 @@ abstract class Model extends Callbacks implements \SplSubject
      */
     protected static $adapter;
 
+    public static $columns = array();
+
+    public static $table;
+
+    public static $primary_key;
+
+    protected $association_cache = array();
+    
     public static $belongsTo = array();
     
     public static $hasMany = array();
@@ -21,6 +31,8 @@ abstract class Model extends Callbacks implements \SplSubject
     public static $hasOne = array();
     
     public static $hasAndBelongsToMany = array();
+    
+    public static $composed_of = array();
 
     protected $observers = array();
 
@@ -38,9 +50,6 @@ abstract class Model extends Callbacks implements \SplSubject
         if ( !empty($this->observers) )
             foreach( $this->observers as $observer )
                 $this->attach(new $observer());
-        
-        $this->logger = new \Lycan\Record\Logger();
-        
     }
 
     public static function initWith($attributes, $options=array())
@@ -51,12 +60,54 @@ abstract class Model extends Callbacks implements \SplSubject
 
     public function __get($attribute)
     {
-        return $this->persistence->attributes->get($attribute);
+        if (in_array($attribute, static::$columns))
+            return $this->persistence->attributes->get($attribute);
+        if ( $assoc = $this->_association_for($attribute) )
+            return $assoc;
+
+        throw new InvalidPropertyException(get_class($this), $attribute);
     }
 
     public function __set($attribute, $value)
     {
-        $this->persistence->attributes->set($attribute, $value);
+        if (in_array($attribute, static::$columns))
+            $this->persistence->attributes->set($attribute, $value);
+
+        if ( $assoc = $this->_association_for($attribute) )
+            return $assoc->set($value);
+
+        throw new InvalidPropertyException(get_class($this), $attribute);
+    }
+
+    public function __call($name, $args)
+    {
+        if ($assoc = $this->_association_for($name, isset($args[0]) ? $args[0] : null))
+            return $assoc;
+    }
+
+    /**
+     * Associations
+     */
+    private function _association_for($name, $reload=false)
+    {
+        $association = $this->get_association_instance($name);
+
+        if ( null == $association || $reload == true ) {
+            if ($association = Associations::hasAssociation($name, $this))
+                $this->set_association_instance($name, $association);
+            if (null == $association ) return false;
+        }
+        return $association;
+    }
+
+    protected function set_association_instance($name, $instance)
+    {
+        $this->association_cache[$name] = $instance;
+    }
+        
+    protected function get_association_instance($name)
+    {
+        return isset($this->association_cache[$name]) ? $this->association_cache[$name] : null;
     }
 
     /**
@@ -67,14 +118,14 @@ abstract class Model extends Callbacks implements \SplSubject
     {
         $options = self::_options_for_finder($as_object, $options);
         $options = array_merge($options, array('fetch_method' => 'one'));
-        return static::$adapter->getQuery(get_called_class(), $options);
+        return static::getAdapter()->getQuery(get_called_class(), $options);
     }
 
     public static function all($as_object=false, $options=array())
     {
         $options = self::_options_for_finder($as_object, $options);
         $options = array_merge($options, array('fetch_method' => 'all'));
-        return static::$adapter->getQuery(get_called_class(), $options)->all();
+        return static::getAdapter()->getQuery(get_called_class(), $options)->all();
     }
 
     public static function first($as_object=false, $options=array())
@@ -122,24 +173,22 @@ abstract class Model extends Callbacks implements \SplSubject
         }
     }
 
-    public static function setAdapter($type, $options)
+    public static function establishConnection($type, $options)
     {
-        if ( null === $type )
+        if (null === $type || empty($options))
             throw new \InvalidArgumentException('You should define an adapter type and $options for setup.');
 
         $adapter = "\\Lycan\\Record\\Adapter\\$type";
-        static::$adapter = new $adapter($options);
-
-    }
-
-    public static function establishConnection($options)
-    {
-        static::setAdapter($options); 
+        $class = get_called_class();
+        static::$adapter[$class] = new $adapter($options);
     }
 
     public static function getAdapter()
     {
-        return static::$adapter;
+        $class = get_called_class();
+        return isset(static::$adapter[$class])
+            ? static::$adapter[$class]
+            : static::$adapter["Lycan\\Record\\Model"];
     }
 
 }

@@ -4,6 +4,8 @@
 
 namespace Lycan\Record\Query;
 
+use Lycan\Support\Inflect;
+
 class Mysql extends \Lycan\Record\Query
 {
     private $_select_values;
@@ -80,11 +82,13 @@ class Mysql extends \Lycan\Record\Query
     public function limit($count)
     {
         $this->limit = (int) $count;
+        return $this;
     }
 
     public function offset($count)
     {
         $this->offset = (int) $count; 
+        return $this;
     }
 
     public function from($table)
@@ -121,13 +125,25 @@ class Mysql extends \Lycan\Record\Query
         
     }
 
-    public function includes()
+    public function includes($models)
     {
-    
+        if (is_array($models)) {
+            $this->includes = $models;
+        } else {
+            $this->includes = array_map('trim', explode(',', $models));
+        }
+        return $this;   
     }
 
     public function all()
     {
+        $this->fetch_method = 'all';
+        return $this->_fetch_data();
+    }
+
+    public function fetch()
+    {
+        $this->fetch_method = 'one';
         return $this->_fetch_data();
     }
 
@@ -151,7 +167,7 @@ class Mysql extends \Lycan\Record\Query
             throw new BadMethodCallException('You must call `where` method before call compileUpdate method');
         $data = "";
         foreach ($attributes as $name=>$value) {
-            $data .= $this->apostrophe($name) . " = " . $this->quote($this->adapter()->escapeString($value)) . ", "; 
+            $data .= $this->apostrophe($name) . " = " . $this->_prepare_value($value) . ", "; 
         }
         $data = substr($data, 0, -2);
         $this->query = "UPDATE {$this->table()} SET {$data} WHERE {$this->where}";
@@ -197,6 +213,26 @@ class Mysql extends \Lycan\Record\Query
         $res = $this->adapter()->query($this);
 
         $collection = new \Lycan\Record\Collection($res);
+        
+        $class = $this->class_name;
+
+        if ( !$collection->isEmpty() && !empty($this->includes) ) {
+            // include extra queries for fetching associations
+            foreach( $this->includes as $include ) {
+                if ( $type = \Lycan\Record\Associations::associationTypeFor($include, 
+                    $class)
+                ) {
+                    $association = "\\Lycan\\Record\\Associations\\".Inflect::classify($type);
+                    $association::bindObjectsToCollection($collection, 
+                        $include, $class,
+                        isset($class::$$type[$include]) 
+                        ? $class::$$type[$include] 
+                        : array()
+                    );
+                }
+            }
+        }
+
         if ('one' == $this->fetch_method) {
             return $collection->first();
         } else {

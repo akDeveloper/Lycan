@@ -5,12 +5,7 @@
 namespace Lycan\Record;
 
 class Persistence implements iPersistence 
-{ 
-    public static $columns = array();
-
-    public static $table;
-
-    public static $primary_key;
+{
 
     protected $class;
     

@@ -19,6 +19,8 @@ abstract class Query
     protected $from;
     
     protected $table;
+    
+    protected $includes;
 
     protected $class_name;
 
@@ -88,6 +90,8 @@ abstract class Query
     abstract public function first();
     
     abstract public function last();
+    
+    abstract public function fetch();
 
     public function __toString()
     {
