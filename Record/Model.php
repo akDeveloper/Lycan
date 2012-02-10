@@ -40,8 +40,6 @@ abstract class Model extends Callbacks implements \SplSubject
 
     protected $persistence;
 
-    protected $logger;
-
     final function __construct($attributes=array(), $options=array()) 
     {
         #parent::__construct($attributes, $options);
