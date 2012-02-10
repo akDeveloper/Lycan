@@ -15,6 +15,8 @@ class Attributes implements \Iterator, \ArrayAccess, \Serializable, \Countable
 
     private $_storage;
 
+    private $_class_name;
+
     private $_old_values = array();
 
     public function __construct($columns, $values=array(), $options=array())
@@ -23,6 +25,7 @@ class Attributes implements \Iterator, \ArrayAccess, \Serializable, \Countable
         $this->_columns = $columns;
         if ( isset($options['primary_key'])) $this->_primary_key =  $options['primary_key'];
         if ( isset($options['composers'])) $this->_composers =  $options['composers'];
+        if ( isset($options['class_name'])) $this->_class_name =  $options['class_name'];
     }
 
     public static function initialize($columns, $class_name, $options=array())
@@ -33,17 +36,17 @@ class Attributes implements \Iterator, \ArrayAccess, \Serializable, \Countable
 
         $options['primary_key'] = $class_name::$primary_key;
         $options['composers'] = $class_name::$composed_of;
+        $options['class_name'] = $class_name;
         return new self($columns, $attributes, $options);
     }
 
     public function assign($new_attributes, $options=array())
     {
-
         foreach ( $new_attributes as $k=>$v ) {
-            if ($this->columnForAttribute($k))
-                isset($options['new_record']) && $options['new_record']
-                ? $this->set($k, $v)
-                : $this->_storage[$k] = $v;
+            #if ($this->columnForAttribute($k))
+            isset($options['new_record']) && $options['new_record']
+            ? $this->set($k, $v)
+            : $this->_storage[$k] = $v;
         }
     }
 
@@ -59,7 +62,9 @@ class Attributes implements \Iterator, \ArrayAccess, \Serializable, \Countable
      */
     public function get($key)
     {
-       return $this[$key];
+        if ( isset($this[$key]) )
+            return $this[$key];
+        throw new \Exception("Undefined index: {$this->_class_name}::{$key}");
     }
 
 
@@ -72,7 +77,7 @@ class Attributes implements \Iterator, \ArrayAccess, \Serializable, \Countable
         {
             unset($this->_old_values[$key]); 
 
-        } elseif( $this->_storage[$key] !== $value ) {
+        } elseif( isset($this->_storage[$key]) && $this->_storage[$key] !== $value ) {
             $this->_old_values[$key] = $this->_storage[$key];
             $this->_storage[$key] = $value;
         }       
