@@ -25,11 +25,11 @@ class Logger extends \Lycan\Support\Logger
         $this->log($buffer);       
     }
 
-    public function connectyionLog($string)
+    public function connectionLog($string)
     {
         $buffer = self::COLOR_SEQ . self::PURPLE 
             . $string
-            . RESET_SEQ;
+            . self::RESET_SEQ;
         $this->log($buffer);
     }
 }
