@@ -18,6 +18,7 @@ abstract class Adapter
      * Database host name
      *
      * @var string
+     * @access protected
      */
     protected $host;
 
@@ -55,6 +56,15 @@ abstract class Adapter
 
     abstract protected function connection();
 
+    /**
+     * Escapes a string to performa a safe sql query
+     *
+     * @param string $string the string to escape
+     * @access public
+     * @abstract
+     *
+     * @return string the escaped string
+     */
     abstract public function escapeString($string);
 
 }

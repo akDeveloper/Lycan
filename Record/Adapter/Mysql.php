@@ -22,25 +22,42 @@ class Mysql extends \Lycan\Record\Adapter
         $this->password       = $options['password'];
         $this->database       = $options['database'];
         $this->charset        = $options['charset'];
+        
+        $this->logger = new \Lycan\Record\Logger();
     }
 
+    /**
+     * Establish a connection to database and retyrn its instance
+     *
+     * @access protected
+     *
+     * @return object \mysqli instance object
+     */
     protected function connection()
     {
         if ( null === $this->connection || null === $this->logger) {
             $this->connection = new \mysqli($this->host, $this->user, $this->password, $this->database, $this->port);
             if ( $this->charset ) $this->connection->set_charset($this->charset);
-            $filename = APP_PATH . "log" . DS . ENV . ".log";
-            $this->logger = new \Lycan\Record\Logger($filename);
-            $this->logger->log(" Connected to " . $this->database . " FROM " . __CLASS__);
+            $this->logger->connectionLog(" Connected to " . $this->database . " FROM " . __CLASS__);
         }
         return $this->connection;
     }
+
 
     public function getQuery($class_name=null, $options = array())
     {
         return new \Lycan\Record\Query\Mysql($class_name, $options);
     }
 
+    /**
+     * Escapes a string to performa a safe sql query
+     *
+     * @param string $string the string to escape
+     * @access public
+     * @abstract
+     *
+     * @return string the escaped string
+     */
     public function escapeString($string)
     {
         return $this->connection()->real_escape_string($string);
