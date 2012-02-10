@@ -95,7 +95,7 @@ class Collection implements \Iterator, \Countable, \ArrayAccess
             if ($search_value == $row->$field_value)
                 $return[] = $row;
         }
-        return $return;
+        return new self($return);
     }
 
     public function detect($search_value, $field_value)
