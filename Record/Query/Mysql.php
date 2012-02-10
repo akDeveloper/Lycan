@@ -12,13 +12,18 @@ class Mysql extends \Lycan\Record\Query
     private $_tables_for_join;
 
     protected $having;
+    protected $joins=array();
+    protected $join_queries;
 
     public function select($args)
     {
         if ( empty($args) || null == $args )
             throw new \InvalidArgumentException('Invalid arguments supplied.');
 
-        $this->select = $args;
+        $args = is_array($args) ? implode(',', $args) : $args;
+        empty($this->select) 
+            ? $this->select .= $args
+            : $this->select .= ", " . $args;
         
         return $this;       
     }
@@ -120,9 +125,27 @@ class Mysql extends \Lycan\Record\Query
     
     }
 
-    public function joins()
+    public function joins($models)
     {
-        
+        if (is_array($models)) {
+            $this->joins = array_merge($this->joins, $models);
+        } else {
+            $this->joins = array_merge($this->joins, array_map('trim', explode(',', $models)));
+        }
+        if ( !empty($this->joins) ) {
+            $model = $this->class_name;
+            foreach ($this->joins as $k=>$join) {
+                if ( $type = \Lycan\Record\Associations::associationTypeFor($join, $model)) {
+                    $association = "\\Lycan\\Record\\Associations\\".Inflect::classify($type);
+                    $this->join_queries[] = $association::joinQuery($this, $join, $model, $k,
+                        isset($model::$$type[$join]) 
+                        ? $model::$$type[$join] 
+                        : array()
+                    );
+                }
+            }
+        }
+        return $this;        
     }
 
     public function includes($models)
@@ -210,23 +233,24 @@ class Mysql extends \Lycan\Record\Query
     private function _fetch_data()
     {
         $this->build_sql();
-        $res = $this->adapter()->query($this);
-
-        $collection = new \Lycan\Record\Collection($res);
+        $model = $this->class_name;
         
-        $class = $this->class_name;
+        $records = $this->adapter()->query($this);
+
+        $collection = new \Lycan\Record\Collection($records);
+        
 
         if ( !$collection->isEmpty() && !empty($this->includes) ) {
             // include extra queries for fetching associations
             foreach( $this->includes as $include ) {
                 if ( $type = \Lycan\Record\Associations::associationTypeFor($include, 
-                    $class)
+                    $model)
                 ) {
                     $association = "\\Lycan\\Record\\Associations\\".Inflect::classify($type);
                     $association::bindObjectsToCollection($collection, 
-                        $include, $class,
-                        isset($class::$$type[$include]) 
-                        ? $class::$$type[$include] 
+                        $include, $model,
+                        isset($model::$$type[$include]) 
+                        ? $model::$$type[$include] 
                         : array()
                     );
                 }
@@ -275,6 +299,9 @@ class Mysql extends \Lycan\Record\Query
 
     protected function build_sql()
     {
+        $class = $this->class_name;
+
+        if ( !empty($this->join_queries) ) $this->select("`{$class::$table}`.*");
         $this->build_select();
 
         $query = isset($this->select) ? "SELECT {$this->select}" : "SELECT *";
@@ -283,8 +310,8 @@ class Mysql extends \Lycan\Record\Query
         if (isset($this->_count))
             $query .= ", {$this->count}";
         $query .= " FROM {$this->apostrophe($this->table())}";
-        if (isset($this->join))
-            $query .= " {$this->join}";
+        if (!empty($this->join_queries))
+            $query .= " " . implode(" ", $this->join_queries);
         if (isset($this->where))
             $query .= " WHERE {$this->where}";
         if (isset($this->group))

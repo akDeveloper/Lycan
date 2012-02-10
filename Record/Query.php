@@ -20,7 +20,7 @@ abstract class Query
     
     protected $table;
     
-    protected $includes;
+    protected $includes=array();
 
     protected $class_name;
 
