@@ -11,11 +11,22 @@ abstract class Associations
 
     static $associations = array('belongsTo', 'hasMany', 'hasOne', 'hasAndBelongsToMany');
 
+    /**
+     * The name of the association as called from the Model
+     */
     protected $name;
 
+    /**
+     * The actual class of association from $options['class_name'] or from 
+     * Inflect::classify($name)
+     */
+    protected $association;
+
+    /**
+     * The class name of the Model that called this association
+     */
     protected $model;
 
-    protected $association;
 
     protected $options;
 
@@ -86,13 +97,18 @@ abstract class Associations
         $this->name = $name;
         $this->model = get_class($model);
         $this->options = $options; 
-        $this->primary_key();
-        $this->foreign_key(); 
-        
-        $this->primary_key_value($model);
-        $this->foreign_key_value($model);
-        
-        $this->association(); 
+        list($this->association, $this->foreign_key, $this->primary_key) = self::set_options($name, $this->model, $options);
+    }
+
+    protected static function set_options($name, $model, $options)
+    {
+        $association = static::association($name, $options);
+            
+        $foreign_key = static::foreign_key($name, $model, $options); 
+
+        $primary_key = static::primary_key($model, $options); 
+
+        return array($association, $foreign_key, $primary_key);
     }
 
     public function find()
@@ -106,35 +122,17 @@ abstract class Associations
         return  $fetch ? $fetch->$attribute : null;
     }
 
-    protected function primary_key()
+    protected static function primary_key($model, $options)
     {
-        $model = $this->model;
-        $this->primary_key = isset($this->options['primary_key'])
-            ? $this->options['primary_key']
+        return isset($options['primary_key'])
+            ? $options['primary_key']
             : $model::$primary_key;
     }
-    protected function foreign_key()
-    {
-        $model = $this->model;
-        $this->foreign_key = isset($this->options['foreign_key'])
-            ? $this->options['foreign_key']
-            : Inflect::underscore($model::$table) . "_" . $model::$primary_key;
-    }
 
-    protected function primary_key_value($model)
+    protected static function association($name, $options)
     {
-        $this->primary_key_value = $model->{$this->primary_key};
-    }
-
-    protected function foreign_key_value($model)
-    {
-        $this->foreign_key_value = $model->{$this->foreign_key};
-    }
-
-    protected function association()
-    {
-        $this->association = isset($this->options['class_name'])
-            ? $this->options['class_name']
-            : Inflect::classify($this->name);
+        return isset($options['class_name'])
+            ? $options['class_name']
+            : Inflect::classify($name);    
     }
 }
