@@ -134,10 +134,10 @@ class Mysql extends \Lycan\Record\Query
         }
         if ( !empty($this->joins) ) {
             $model = $this->class_name;
-            foreach ($this->joins as $k=>$join) {
+            foreach ($this->joins as $join) {
                 if ( $type = \Lycan\Record\Associations::associationTypeFor($join, $model)) {
                     $association = "\\Lycan\\Record\\Associations\\".Inflect::classify($type);
-                    $this->join_queries[] = $association::joinQuery($this, $join, $model, $k,
+                    $this->join_queries[] = $association::joinQuery($this, $join, $model,
                         isset($model::$$type[$join]) 
                         ? $model::$$type[$join] 
                         : array()

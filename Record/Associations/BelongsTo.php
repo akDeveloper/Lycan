@@ -30,11 +30,6 @@ class BelongsTo extends \Lycan\Record\Associations
         return $this->result_set;
     }
 
-    public function get()
-    {
-
-    }
-
     public function set(\Lycan\Record\Model $associate)
     {
         $this->result_set = $associate; // belongsto has only one association
@@ -59,7 +54,7 @@ class BelongsTo extends \Lycan\Record\Associations
         } 
     }
 
-    public static function joinQuery($query, $name, $model, $index, $options)
+    public static function joinQuery($query, $name, $model, $options)
     {
         list($class, $foreign_key, $primary_key) = self::set_options($name, $model, $options);
         $join_table = $class::$table;
