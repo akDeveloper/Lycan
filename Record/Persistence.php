@@ -22,7 +22,7 @@ class Persistence implements iPersistence
         $this->class = $class;
         $this->new_record = isset($options['new_record']) ? $options['new_record'] : true;
         $options['new_record'] = $this->new_record;
-        $this->attributes = Attributes::initialize($class::$columns, $class, $options);
+        $this->attributes = new Attributes($class::$columns, $class, $options);
 
         if ($attributes)
             $this->attributes->assign($attributes, array('new_record'=>$this->new_record));
@@ -135,7 +135,7 @@ class Persistence implements iPersistence
         $class = $this->class;
         $attributes_with_values =  $this->attributes->attributesValues(!is_null($this->id()));
 
-        $query  = $class::getAdapter()->getQuery(get_called_class())->compileInsert($attributes_with_values);
+        $query  = $class::getAdapter()->getQuery($class)->compileInsert($attributes_with_values);
         $new_id = $class::getAdapter()->insert($query);
 
         if ($class::$primary_key)
