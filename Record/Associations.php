@@ -13,17 +13,23 @@ abstract class Associations
 
     /**
      * The name of the association as called from the Model
+     *
+     * @var string
      */
     protected $name;
 
     /**
      * The actual class of association from $options['class_name'] or from 
      * Inflect::classify($name)
+     *
+     * @var string
      */
     protected $association;
 
     /**
      * The class name of the Model that called this association
+     *
+     * @var string
      */
     protected $model;
 
@@ -36,9 +42,14 @@ abstract class Associations
     protected $foreign_key_value;
     protected $primary_key_value;
 
+    /**
+     * Handles model or collection objects from associations calls
+     * 
+     * @var mixed
+     */
     protected $result_set;
 
-    public static function build($type, $name, $model, $options=array())
+    protected static function get_instance($type, $name, $model, $options=array())
     {
         switch ($type) {
             case 'belongsTo':
@@ -79,25 +90,17 @@ abstract class Associations
         return false;       
     }
 
-    public static function hasAssociation($name, $model)
+    public static function buildAssociation($name, $model)
     {
         $instance = $model;
         $model = get_class($model);
         $type = self::associationTypeFor($name, $model);
-        return self::build($type, $name, $instance, 
+        return self::get_instance($type, $name, $instance, 
             isset($model::$$type[$name]) 
             ? $model::$$type[$name] 
             : array()
         );
         return false;
-    }
-
-    public function __construct($name, $model, $options)
-    {
-        $this->name = $name;
-        $this->model = get_class($model);
-        $this->options = $options; 
-        list($this->association, $this->foreign_key, $this->primary_key) = self::set_options($name, $this->model, $options);
     }
 
     protected static function set_options($name, $model, $options)
@@ -111,10 +114,15 @@ abstract class Associations
         return array($association, $foreign_key, $primary_key);
     }
 
-    public function find()
+    public function __construct($name, $model, $options)
     {
-        
+        $this->name = $name;
+        $this->model = get_class($model);
+        $this->options = $options; 
+        list($this->association, $this->foreign_key, $this->primary_key) = self::set_options($name, $this->model, $options);
     }
+
+
 
     public function __get($attribute)
     {   

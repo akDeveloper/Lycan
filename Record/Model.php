@@ -69,7 +69,7 @@ abstract class Model extends Callbacks implements \SplSubject
     public function __set($attribute, $value)
     {
         if (in_array($attribute, static::$columns))
-            $this->persistence->attributes->set($attribute, $value);
+            return $this->persistence->attributes->set($attribute, $value);
 
         if ( $assoc = $this->_association_for($attribute) )
             return $assoc->set($value);
@@ -91,7 +91,7 @@ abstract class Model extends Callbacks implements \SplSubject
         $association = $this->get_association_instance($name);
 
         if ( null == $association || $reload == true ) {
-            if ($association = Associations::hasAssociation($name, $this))
+            if ($association = Associations::buildAssociation($name, $this))
                 $this->set_association_instance($name, $association);
             if (null == $association ) return false;
         }
