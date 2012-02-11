@@ -19,25 +19,20 @@ class Attributes implements \Iterator, \ArrayAccess, \Serializable, \Countable
 
     private $_old_values = array();
 
-    public function __construct($columns, $values=array(), $options=array())
-    {
-        $this->_storage = $values;
-        $this->_columns = $columns;
-        if ( isset($options['primary_key'])) $this->_primary_key =  $options['primary_key'];
-        if ( isset($options['composers'])) $this->_composers =  $options['composers'];
-        if ( isset($options['class_name'])) $this->_class_name =  $options['class_name'];
-    }
-
-    public static function initialize($columns, $class_name, $options=array())
+    public function __construct($columns, $class_name, $options=array())
     {
         $attributes = array();
         if (isset($options['new_record']) && $options['new_record'])
             $attributes = array_combine($columns, array_pad(array(), count($columns), null));
 
-        $options['primary_key'] = $class_name::$primary_key;
-        $options['composers'] = $class_name::$composed_of;
-        $options['class_name'] = $class_name;
-        return new self($columns, $attributes, $options);
+        $this->_primary_key = $class_name::$primary_key;
+        $this->_composers = $class_name::$composed_of;
+        $this->_class_name = $class_name;
+
+        $this->_storage = $attributes;
+        if (isset($options['new_record']) && $options['new_record'])
+            $this->_old_values = $attributes;
+        $this->_columns = $columns;
     }
 
     public function assign($new_attributes, $options=array())
@@ -62,7 +57,7 @@ class Attributes implements \Iterator, \ArrayAccess, \Serializable, \Countable
      */
     public function get($key)
     {
-        if ( isset($this[$key]) )
+        if (array_key_exists($key, $this->_storage))
             return $this[$key];
         throw new \Exception("Undefined index: {$this->_class_name}::{$key}");
     }
@@ -77,10 +72,10 @@ class Attributes implements \Iterator, \ArrayAccess, \Serializable, \Countable
         {
             unset($this->_old_values[$key]); 
 
-        } elseif( isset($this->_storage[$key]) && $this->_storage[$key] !== $value ) {
+        } elseif( array_key_exists($key, $this->_storage) && $this->_storage[$key] !== $value ) {
             $this->_old_values[$key] = $this->_storage[$key];
             $this->_storage[$key] = $value;
-        }       
+        } 
     }
 
     public function attributesValues($include_primary_key=true, $include_readonly_attributes=true, $attribute_names=null)
