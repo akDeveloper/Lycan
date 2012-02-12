@@ -11,8 +11,6 @@ interface Collection
 
     public function create($attributes=array());
     
-    public function saveAssociation();
-
     public function set($value, $offset=null);
     
     public function getIds();
