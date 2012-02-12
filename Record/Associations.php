@@ -27,17 +27,6 @@ abstract class Associations
      * @var string
      */
     protected $association;
-    
-    /**
-     * When associate object is a new object and parent object calls save 
-     * method, forces association to call its save method 
-     * and set foreign key or join tables fields with appropriate values.
-     *
-     * Set to true so trigger associate save method.
-     *
-     * @var boolean
-     */
-    protected $marked_for_save=false;
 
     /**
      * The class name of the Model that called this association
@@ -46,6 +35,11 @@ abstract class Associations
      */
     protected $model;
 
+    /**
+     * The class instance of the Model that called this association
+     *
+     * @var \Lycan\Record\Model
+     */
     protected $model_instane;
 
     protected $options;

@@ -6,6 +6,14 @@ namespace Lycan\Record\Associations;
 
 abstract class Single extends \Lycan\Record\Associations implements Interfaces\Single
 {
+    /**
+     * When associate object is a new object and parent object calls save 
+     * method, forces association to call its save method 
+     * and set foreign key or join tables fields with appropriate values.
+     *
+     * @var boolean
+     */
+    protected $marked_for_save=false;
 
     public function __call($method, $args)
     {
