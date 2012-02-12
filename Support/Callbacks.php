@@ -6,6 +6,7 @@ namespace Lycan\Support;
 
 class Callbacks extends Callbacks\Base
 {
+    private $_reflection_properties=array();
 
     public static $CALLBACKS = array(
         'after_initialize', 'after_find', 'after_touch', 'before_validation', 'after_validation',
@@ -14,35 +15,48 @@ class Callbacks extends Callbacks\Base
         'before_destroy', 'around_destroy', 'after_destroy', 'after_commit', 'after_rollback'       
     );
 
-    protected static function callback_exists($callback)
+
+    protected function reflection_properties()
     {
-        #$class = get_called_class();
-        $class = '\\Lycan\\Record\\Persistence';
-        try {
-            $reflection = new \ReflectionClass($class);
-            if ( $method = $reflection->getMethod($callback))
-                return $method;
-        } catch (\Exception $e) {
-            return false;
+        if (empty($this->_reflection_properties)) {
+            $ref = new \ReflectionClass('\Lycan\Record\Model');
+            $def_prop = $ref->getDefaultProperties();
+            
+            foreach( self::$CALLBACKS as $callback ) {
+                if (array_key_exists($callback, $def_prop)) {
+                    if ( !isset($this->_reflection_properties[$callback]) ) $this->_reflection_properties[$callback] = array();
+
+                    $this->_reflection_properties[$callback] = array_merge($this->_reflection_properties[$callback], $def_prop[$callback]);
+                    
+                    if ( isset($this->$callback) && $this->$callback != $def_prop[$callback])
+                        $this->_reflection_properties[$callback] = array_merge($this->_reflection_properties[$callback], $this->$callback);
+                }
+            }
         }
+        return $this->_reflection_properties;
     }
 
-    protected function perform_callback_for($model, $persistence, $kind, $chain)
+    protected function perform_callback_for($kind, $chain)
     {
         $obs = $norm = true;
-        #$method_to_call = "{$chain}_{$method}";
-        $methods_to_call = array("{$chain}_{$kind}");
+        $callback_methods = array("{$chain}_{$kind}");
         if ($kind == 'update') {
-            $methods_to_call[] = "{$chain}_save";
+            $callback_methods[] = "{$chain}_save";
         }
-        foreach( $methods_to_call as $method ) {
-            if (!in_array($method, self::$CALLBACKS)) continue;
-            //Call callback method
-            if ( method_exists($model, $method) )
-                $norm = $model->$method();
+        foreach( $callback_methods as $callback ) {
+            if (!in_array($callback, self::$CALLBACKS)) continue;
+            
+            //Call model callback method
+            if ( array_key_exists($callback, $this->_reflection_properties)) {
+                foreach ($this->_reflection_properties[$callback] as $method) {
+                    $norm = $this->$method();
+                    if ( false === $norm ) break;
+                }
+            }
+            
             //Call observer callbacks if exist
-            if ( $model instanceof \SplSubject )
-                $obs = $model->notifySubject($method);
+            if ( $this instanceof \SplSubject )
+                $obs = $this->notifySubject($callback);
             if ( $obs !==false && $norm !== false ) 
                 continue;
             else
@@ -50,4 +64,5 @@ class Callbacks extends Callbacks\Base
         }
         return true;
     }
+
 }

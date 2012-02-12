@@ -9,9 +9,9 @@ abstract class Callbacks extends \Lycan\Support\Callbacks implements \Lycan\Supp
 
     public function run_callbacks($kind, $args=null)
     {
-        $res = $this->perform_callback_for($this, $this->persistence, $kind, 'before');
+        $res = $this->perform_callback_for($kind, 'before');
         $res = $res !== false ? $this->persistence->$kind($args) : false;
-        return $res !== false ? $this->perform_callback_for($this, $this->persistence, $kind, 'after') : false;
+        return $res !== false ? $this->perform_callback_for($kind, 'after') : false;
     }
 
     public function destroy()
@@ -31,8 +31,8 @@ abstract class Callbacks extends \Lycan\Support\Callbacks implements \Lycan\Supp
 
     protected function create_or_update($options=array())
     {
-        if ( !($this->persistence instanceof \Lycan\Record\iPersistence) )
-            throw new \LogicException( get_class($this) . "::persistence property must implements \Lycan\Record\iPersistence interface");
+        if ( !($this->persistence instanceof \Lycan\Record\Interfaces\Persistence) )
+            throw new \LogicException( get_class($this) . "::persistence property must implements \Lycan\Record\Interfaces\Persistence interface");
         
         $result = $this->persistence->isNewRecord() ? $this->create() : $this->update();
         return $result != false;# ? $this->run_callbacks('save', $options) : false;
