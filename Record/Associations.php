@@ -177,7 +177,7 @@ abstract class Associations
     protected function magic_method_call($method, $args, $instance)
     {
         try {
-            $method = new ReflectionMethod($instance);
+            $method = new \ReflectionMethod($instance, $method);
             return $method->invokeArgs($instance, $args);
         } catch(\ReflectionException $e) {
            throw new InvalidMethodException(get_class($instance, $name));
