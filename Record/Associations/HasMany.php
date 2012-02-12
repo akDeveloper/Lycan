@@ -6,55 +6,9 @@ namespace Lycan\Record\Associations;
 
 use Lycan\Support\Inflect;
 
-class HasMany extends \Lycan\Record\Associations\Collection
+class HasMany extends \Lycan\Record\Associations\Collection 
 {
-    public function __construct($name, $model, $options)
-    {
-        parent::__construct($name, $model, $options);
-        $this->primary_key_value($model);
-    }
 
-    public function all()
-    {
-        $find = $this->find();
-        return $find instanceof \Lycan\Record\Collection ? $find : $find->all();
-    }
-
-    public function find($force_reload=false)
-    {
-        if ((null == $this->result_set && null != $this->primary_key_value) 
-            || $force_reload
-        ) {
-            $association = $this->association;
-            $this->result_set = $association::find()
-                ->where(array($this->foreign_key => $this->primary_key_value));
-        }
-        return $this->result_set; 
-    }
-
-    public function set($value, $offset=null)
-    {
-        $association = $this->association;
-        
-        if (!($value instanceof $association) && !($value instanceof \Lycan\Record\Collection))
-            throw new \InvalidArgumentException("Invalid object ".get_class($value).". Expected $association or \Lycan\Record\Collection");
-
-        $ids = $this->all()->toArray($association::$primary_key);
-
-        if ($value instanceof $association) {
-            if (   null == $value->{$association::$primary_key}
-                || !in_array($value->{$association::$primary_key})
-            ) {
-                $value->{$this->foreign_key} = $this->primary_key_value;
-                //if ( $value->save() )
-                    $this->all()->offsetSet($offset, $value); 
-            }
-        } elseif ($value instanceof \Lycan\Record\Model) {
-            
-        }
-
-    }
-    
     public static function bindObjectsToCollection($collection, $name, $model, $options)
     {
         // Setup options
@@ -87,6 +41,97 @@ class HasMany extends \Lycan\Record\Associations\Collection
             : Inflect::singularize($model::$table) . "_" . $model::$primary_key;
     }
 
+    public function __construct($name, $model, $options)
+    {
+        parent::__construct($name, $model, $options);
+        $this->primary_key_value($model);
+    }
+
+    public function build($attributes=array())
+    {
+    
+    }
+
+    public function create($attributes=array())
+    {
+    
+    }
+
+    public function set($value, $offset=null)
+    {
+        $association = $this->association;
+        
+        if (!($value instanceof $association) && !($value instanceof \Lycan\Record\Collection))
+            throw new \InvalidArgumentException("Invalid type ".gettype($value).". Expected $association or \Lycan\Record\Collection class instance");
+
+        $ids = $this->all()->toArray($association::$primary_key);
+
+        if ($value instanceof $association) {
+            $collection = new \Lycan\Record\Collection(array($value));
+        } elseif ($value instanceof \Lycan\Record\Collection) {
+            $collection = $value;
+        }
+        foreach ($collection as $v) {
+            if (!in_array($v->{$association::$primary_key}, $ids)) {
+                $v->{$this->foreign_key} = $this->primary_key_value;
+                if ( $v->save() )
+                    $this->all()->offsetSet($offset, $v);
+            }           
+        }
+    }
+
+    public function getIds() 
+    {
+    
+    }
+    
+    public function setIds(array $ids)
+    {
+    
+    }
+
+    public function all()
+    {
+        $find = $this->find();
+        return $find instanceof \Lycan\Record\Collection ? $find : $find->all();
+    }
+
+    public function find($force_reload=false)
+    {
+        if ((null == $this->result_set && null != $this->primary_key_value) 
+            || $force_reload
+        ) {
+            $association = $this->association;
+            $this->result_set = $association::find()
+                ->where(array($this->foreign_key => $this->primary_key_value));
+        }
+        return $this->result_set; 
+    }
+   
+    public function delete($value)
+    {
+    
+    }
+    
+    public function clear()
+    {
+    }
+
+    public function isEmpty()
+    {
+    
+    }
+
+    public function size()
+    {
+    
+    }
+
+    public function exists()
+    {
+    
+    }
+    
     protected function primary_key_value($model)
     {
         $this->primary_key_value = $model->{$this->primary_key};

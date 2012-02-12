@@ -6,13 +6,14 @@ namespace Lycan\Record\Associations;
 
 use Lycan\Support\Inflect;
 
-abstract class Collection extends \Lycan\Record\Associations implements \IteratorAggregate, \ArrayAccess
+abstract class Collection extends \Lycan\Record\Associations implements Interfaces\Collection, \IteratorAggregate, \ArrayAccess
 {
 
     public function setWith(\Lycan\Record\Collection $collection)
     {
         $this->result_set = $collection;
     }
+
     /**
      * IteratorAggregate
      */
