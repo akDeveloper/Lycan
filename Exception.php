@@ -29,14 +29,18 @@ class Exception extends \Exception
 
     public function dispatch()
     {
-        ob_end_clean();
-        $file = \Lycan\Action\Controller::$layouts_path . "error_layout.phtml";
-        ob_start();
-        ob_implicit_flush(0);
-        include $file;
-        $body = ob_get_contents();
-        ob_end_clean();
+        if (php_sapi_name() == 'cli' && empty($_SERVER['REMOTE_ADDR'])) {
+            return $this;
+        } else {
+            ob_end_clean();
+            $file = \Lycan\Action\Controller::$layouts_path . "error_layout.phtml";
+            ob_start();
+            ob_implicit_flush(0);
+            include $file;
+            $body = ob_get_contents();
+            ob_end_clean();
 
-        return $body;
+            return $body;
+        }
     }
 }
