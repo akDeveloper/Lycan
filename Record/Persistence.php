@@ -4,7 +4,7 @@
 
 namespace Lycan\Record;
 
-class Persistence implements iPersistence 
+class Persistence implements Interfaces\Persistence 
 {
 
     protected $class;

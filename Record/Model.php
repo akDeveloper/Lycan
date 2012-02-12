@@ -21,9 +21,7 @@ abstract class Model extends Callbacks implements \SplSubject
     public static $table;
 
     public static $primary_key;
-
-    protected $association_cache = array();
-    
+ 
     public static $belongsTo = array();
     
     public static $hasMany = array();
@@ -40,14 +38,25 @@ abstract class Model extends Callbacks implements \SplSubject
 
     protected $persistence;
 
+    protected $before_save = array(
+        'associations_callbacks'
+    );
+
+    protected $before_create = array(
+        'associations_callbacks'
+    );
+
+    protected $association_cache = array();
+    
     final function __construct($attributes=array(), $options=array()) 
     {
-        #parent::__construct($attributes, $options);
         $this->persistence = new Persistence(get_called_class(),$attributes, $options);
         
         if ( !empty($this->observers) )
             foreach( $this->observers as $observer )
                 $this->attach(new $observer());
+
+        $this->reflection_properties();
     }
 
     public static function initWith($attributes, $options=array())
@@ -56,10 +65,22 @@ abstract class Model extends Callbacks implements \SplSubject
         return new static($attributes, $options);
     }
 
+    /**
+     * Persistence attributes can be accessed from Model class. Also 
+     * association names can be called via magic methods.
+     *
+     * @params string $attribute
+     *
+     * @return mixed persistence attribute or association instance
+     * @throws \Lycan\Record\InvalidPropertyException
+     *
+     * @access public
+     */
     public function __get($attribute)
     {
         if (in_array($attribute, static::$columns))
             return $this->persistence->attributes->get($attribute);
+
         if ( $assoc = $this->_association_for($attribute) )
             return $assoc;
 
@@ -69,18 +90,22 @@ abstract class Model extends Callbacks implements \SplSubject
     public function __set($attribute, $value)
     {
         if (in_array($attribute, static::$columns))
-            return $this->persistence->attributes->set($attribute, $value);
-
-        if ( $assoc = $this->_association_for($attribute) )
+            $this->persistence->attributes->set($attribute, $value);
+        elseif ( $assoc = $this->_association_for($attribute) )
             return $assoc->set($value);
-
-        throw new InvalidPropertyException(get_class($this), $attribute);
+        else
+            throw new InvalidPropertyException(get_class($this), $attribute);
     }
 
     public function __call($name, $args)
     {
         if ($assoc = $this->_association_for($name, isset($args[0]) ? $args[0] : null))
             return $assoc;
+    }
+
+    public function isNewRecord()
+    {
+        return $this->persistence->isNewRecord();
     }
 
     /**
@@ -106,6 +131,13 @@ abstract class Model extends Callbacks implements \SplSubject
     protected function get_association_instance($name)
     {
         return isset($this->association_cache[$name]) ? $this->association_cache[$name] : null;
+    }
+
+    final protected function associations_callbacks()
+    {
+        foreach( $this->association_cache as $assoc ) {
+            if ( $assoc->needSave() ) $assoc->save();
+        }
     }
 
     /**

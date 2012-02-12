@@ -25,6 +25,17 @@ abstract class Associations
      * @var string
      */
     protected $association;
+    
+    /**
+     * When associate object is a new object and parent object calls save 
+     * method, forces association to call its save method 
+     * and set foreign key or join tables fields with appropriate values.
+     *
+     * Set to true so trigger associate save method.
+     *
+     * @var boolean
+     */
+    protected $marked_for_save=false;
 
     /**
      * The class name of the Model that called this association
@@ -33,6 +44,7 @@ abstract class Associations
      */
     protected $model;
 
+    protected $model_instane;
 
     protected $options;
 
@@ -114,20 +126,36 @@ abstract class Associations
         return array($association, $foreign_key, $primary_key);
     }
 
+
+    public static function bindObjectsToCollection($collection, $name, $model, $options)
+    {
+        throw new \Exception(__FUNCTION__ . " must be implemented.");
+    }
+    
+    public static function joinQuery($query, $name, $model, $options)
+    {
+        throw new \Exception(__FUNCTION__ . " must be implemented.");
+    }
+
     public function __construct($name, $model, $options)
     {
         $this->name = $name;
         $this->model = get_class($model);
+        $this->model_instance = $model;
         $this->options = $options; 
         list($this->association, $this->foreign_key, $this->primary_key) = self::set_options($name, $this->model, $options);
     }
-
-
 
     public function __get($attribute)
     {   
         $fetch = $this->fetch();
         return  $fetch ? $fetch->$attribute : null;
+    }
+
+
+    public function needSave()
+    {
+        return $this->marked_for_save === true;
     }
 
     protected static function primary_key($model, $options)
