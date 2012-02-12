@@ -44,7 +44,7 @@ class Logger extends \SplFileObject
         self::getLogger()->log($buffer);
     }
 
-    public static function getLogger($env='development', $open_mode="a")
+    public static function getLogger($env=null, $open_mode="a")
     {
         if (self::$logger_instance) return self::$logger_instance; 
         $env = $env ?: ENV;
