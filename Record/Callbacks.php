@@ -4,7 +4,7 @@
 
 namespace Lycan\Record;
 
-abstract class Callbacks extends \Lycan\Support\Callbacks implements \Lycan\Support\iCallbacks
+abstract class Callbacks extends \Lycan\Support\Callbacks implements \Lycan\Support\Interfaces\Callbacks
 {
 
     public function run_callbacks($kind, $args=null)
