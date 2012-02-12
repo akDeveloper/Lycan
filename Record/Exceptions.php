@@ -12,3 +12,12 @@ class InvalidPropertyException extends \Lycan\Exception
         parent::__construct("Invalid property {$class}::{$property}");
     }
 }
+
+class InvalidMethodException extends \Lycan\Exception
+{
+    
+    public function __construct($class, $method)
+    {
+        parent::__construct("Invalid method {$class}::{$method}");
+    }
+}

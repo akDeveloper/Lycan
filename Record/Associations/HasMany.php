@@ -57,6 +57,11 @@ class HasMany extends \Lycan\Record\Associations\Collection
     
     }
 
+    public function save()
+    {
+    
+    }
+
     public function set($value, $offset=null)
     {
         $association = $this->association;

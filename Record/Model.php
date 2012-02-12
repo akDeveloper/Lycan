@@ -136,7 +136,7 @@ abstract class Model extends Callbacks implements \SplSubject
     final protected function associations_callbacks()
     {
         foreach( $this->association_cache as $assoc ) {
-            if ( $assoc->needSave() ) $assoc->save();
+            if ( $assoc->needSave() ) $assoc->saveAssociation();
         }
     }
 

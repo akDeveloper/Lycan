@@ -10,6 +10,8 @@ interface Collection
     public function build($attributes=array());
 
     public function create($attributes=array());
+    
+    public function saveAssociation();
 
     public function set($value, $offset=null);
     

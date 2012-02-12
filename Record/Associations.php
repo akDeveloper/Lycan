@@ -4,6 +4,8 @@
 
 namespace Lycan\Record;
 
+require_once __DIR__ . DS . 'Exceptions.php';
+
 use Lycan\Support\Inflect;
 
 abstract class Associations
@@ -170,5 +172,15 @@ abstract class Associations
         return isset($options['class_name'])
             ? $options['class_name']
             : Inflect::classify($name);    
+    }
+
+    protected function magic_method_call($method, $args, $instance)
+    {
+        try {
+            $method = new ReflectionMethod($instance);
+            return $method->invokeArgs($instance, $args);
+        } catch(\ReflectionException $e) {
+           throw new InvalidMethodException(get_class($instance, $name));
+        }
     }
 }

@@ -59,7 +59,7 @@ class BelongsTo extends \Lycan\Record\Associations\Single
     
     }
 
-    public function save()
+    public function saveAssociation()
     {
         $associate = $this->fetch();
         $association = $this->association;
