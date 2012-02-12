@@ -180,7 +180,7 @@ abstract class Associations
             $method = new \ReflectionMethod($instance, $method);
             return $method->invokeArgs($instance, $args);
         } catch(\ReflectionException $e) {
-           throw new InvalidMethodException(get_class($instance, $name));
+           throw new InvalidMethodException(get_class($instance), $method);
         }
     }
 }
