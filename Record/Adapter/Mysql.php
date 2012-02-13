@@ -96,4 +96,17 @@ class Mysql extends \Lycan\Record\Adapter
         return $res ? $this->connection()->insert_id : false;
     }
 
+    public function rawSql($sql)
+    {
+        $start = microtime(true);
+        $res = $this->connection()->query($sql);        
+
+        $this->logger->logQuery($sql, 'Raw', microtime(true) - $start);
+
+        if (!$res)
+            throw new \Exception("Error executing query: " . $sql . "\n" . $this->connection()->error);
+        
+        return $res;
+    }
+
 }
