@@ -8,6 +8,14 @@ use Lycan\Support\Inflect;
 
 class BelongsTo extends \Lycan\Record\Associations\Single
 {
+    /**
+     * When associate object is a new object and parent object calls save 
+     * method, forces association to call its save method 
+     * and set foreign key or join tables fields with appropriate values.
+     *
+     * @var boolean
+     */
+    protected $marked_for_save=false;
 
     public static function bindObjectsToCollection($collection, $name, $model, $options)
     {
