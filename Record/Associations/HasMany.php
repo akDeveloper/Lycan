@@ -119,12 +119,12 @@ class HasMany extends \Lycan\Record\Associations\Collection
 
     public function isEmpty()
     {
-    
+        return $this->all()->isEmpty();
     }
 
     public function size()
     {
-    
+        return $this->all()->count(); 
     }
 
     public function exists()
