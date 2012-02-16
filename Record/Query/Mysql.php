@@ -230,6 +230,35 @@ class Mysql extends \Lycan\Record\Query
         return $this;
     }
 
+    private function _includes($include, $collection, $model)
+    {
+        if ( is_array($include) && !is_numeric(key($include)) ) {
+            foreach($include as $k=>$v){
+                $c = $this->_includes($k, $collection, $model);
+                if ( is_array($v)) {
+                    $class = \Lycan\Support\Inflect::classify($k);
+                    $this->_includes($v, $c,$class );
+                } else {
+                    $class = \Lycan\Support\Inflect::classify($v);
+                    $this->_includes($v, $c, $class);
+                }
+            }
+        } else {
+            if ( is_array($include) ) $include = current($include);
+            if ( $type = \Lycan\Record\Associations::associationTypeFor($include, 
+                $model)
+            ) {
+                $association = "\\Lycan\\Record\\Associations\\".Inflect::classify($type);
+                return $association::bindObjectsToCollection($collection, 
+                    $include, $model,
+                    isset($model::$$type[$include]) 
+                    ? $model::$$type[$include] 
+                    : array()
+                );
+            }
+        }
+    }
+
     private function _fetch_data()
     {
         $this->build_sql();
@@ -242,17 +271,11 @@ class Mysql extends \Lycan\Record\Query
 
         if ( !$collection->isEmpty() && !empty($this->includes) ) {
             // include extra queries for fetching associations
-            foreach( $this->includes as $include ) {
-                if ( $type = \Lycan\Record\Associations::associationTypeFor($include, 
-                    $model)
-                ) {
-                    $association = "\\Lycan\\Record\\Associations\\".Inflect::classify($type);
-                    $association::bindObjectsToCollection($collection, 
-                        $include, $model,
-                        isset($model::$$type[$include]) 
-                        ? $model::$$type[$include] 
-                        : array()
-                    );
+            foreach( $this->includes as $k=>$include ) {
+                if ( !is_numeric($k) ) {
+                    $this->_includes(array($k => $include), $collection,$model);
+                } else { 
+                    $this->_includes($include, $collection,$model);
                 }
             }
         }
