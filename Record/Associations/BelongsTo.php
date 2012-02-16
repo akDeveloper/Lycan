@@ -8,15 +8,6 @@ use Lycan\Support\Inflect;
 
 class BelongsTo extends \Lycan\Record\Associations\Single
 {
-    /**
-     * When associate object is a new object and parent object calls save 
-     * method, forces association to call its save method 
-     * and set foreign key or join tables fields with appropriate values.
-     *
-     * @var boolean
-     */
-    protected $marked_for_save=false;
-
     public static function bindObjectsToCollection($collection, $name, $model, $options)
     {
         // Setup options
@@ -34,6 +25,7 @@ class BelongsTo extends \Lycan\Record\Associations\Single
             if ( null != $detect )
                 $value->$name->setWith($detect);
         }
+        return $belongs_to;
     }
 
     public static function joinQuery($query, $name, $model, $options)
@@ -87,7 +79,7 @@ class BelongsTo extends \Lycan\Record\Associations\Single
     {
         $association = $this->association;
 
-        if ( null !== $associate->id )
+        if ( null !== $associate->{$association::$primary_key} )
             $this->model_instance->{$this->foreign_key} = $associate->{$association::$primary_key};
         else
             $this->marked_for_save = true;
@@ -98,7 +90,7 @@ class BelongsTo extends \Lycan\Record\Associations\Single
     public function fetch()
     {
         $find = $this->find();
-        return $find instanceof \Lycan\Record\Model ? $find : $find->fetch();
+        return $find instanceof \Lycan\Record\Query ? $find->fetch() : $find;
     }
 
     public function find()

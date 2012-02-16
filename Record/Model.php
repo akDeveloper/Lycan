@@ -39,11 +39,19 @@ abstract class Model extends Callbacks implements \SplSubject
     protected $persistence;
 
     protected $before_save = array(
-        'associations_callbacks'
+        'belongs_to_associations_callbacks'
     );
 
     protected $before_create = array(
-        'associations_callbacks'
+        'belongs_to_associations_callbacks'
+    );
+
+    protected $after_save = array(
+        'has_one_associations_callbacks'
+    );
+
+    protected $after_create = array(
+        'has_one_associations_callbacks'
     );
 
     protected $association_cache = array();
@@ -133,10 +141,17 @@ abstract class Model extends Callbacks implements \SplSubject
         return isset($this->association_cache[$name]) ? $this->association_cache[$name] : null;
     }
 
-    final protected function associations_callbacks()
+    final protected function belongs_to_associations_callbacks()
     {
         foreach( $this->association_cache as $assoc ) {
-            if ( $assoc->needSave() ) $assoc->saveAssociation();
+            if ( ($assoc instanceof \Lycan\Record\Associations\BelongsTo) && $assoc->needSave() ) $assoc->saveAssociation();
+        }
+    }
+
+    final protected function has_one_associations_callbacks()
+    {
+        foreach( $this->association_cache as $assoc ) {
+            if ( ($assoc instanceof \Lycan\Record\Associations\HasOne) && $assoc->needSave() ) $assoc->saveAssociation();
         }
     }
 

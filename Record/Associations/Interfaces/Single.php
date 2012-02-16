@@ -10,6 +10,8 @@ interface Single
 
     public function create($attributes=array());
 
+    public function saveAssociation();
+        
     public function set(\Lycan\Record\Model $associate);
 }
 

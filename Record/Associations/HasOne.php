@@ -23,7 +23,8 @@ class HasOne extends \Lycan\Record\Associations\Single
             $detect = $has_one->detect($value->$primary_key, $foreign_key);
             if ( null != $detect )
                 $value->$name->setWith($detect);
-        } 
+        }
+        return $has_one;
     }
     
     public static function joinQuery($query, $name, $model, $options)
@@ -55,9 +56,23 @@ class HasOne extends \Lycan\Record\Associations\Single
 
     public function create($attributes=array())
     {
-    
     }
 
+    public function saveAssociation()
+    {
+        $associate = $this->fetch();
+        $association = $this->association;
+        $id = $association::$primary_key;
+        $save = true;
+
+        $associate->{$this->foreign_key} = $this->model_instance->{$this->primary_key};
+        $save = $associate->save();
+
+        if ($save) 
+            $this->marked_for_save = false;
+        
+    }
+        
     public function set(\Lycan\Record\Model $associate)
     {
         $association = $this->association;
@@ -83,12 +98,18 @@ class HasOne extends \Lycan\Record\Associations\Single
             }
         }
 
-        $associate->{$this->foreign_key} = $this->primary_key_value;
-        if ( $associate->save() ){
-            $this->result_set = $associate;
-            return $associate;
+        if ( null !== $associate->{$association::$primary_key} ) {
+            $associate->{$this->foreign_key} = $this->primary_key_value;
+            if ( $associate->save() ){
+                $this->result_set = $associate;
+                return $associate;
+            } else {
+                return false;
+            }
         } else {
-            return false;
+            $this->result_set = $associate;
+            $this->marked_for_save = true;
+            return $associate;
         }
             
     }
@@ -96,7 +117,7 @@ class HasOne extends \Lycan\Record\Associations\Single
     public function fetch()
     {
         $find = $this->find();
-        return $find instanceof \Lycan\Record\Model ? $find : $find->fetch();
+        return $find instanceof \Lycan\Record\Query ? $find->fetch() : $find;
     }
 
     public function find($force_reload=false)
