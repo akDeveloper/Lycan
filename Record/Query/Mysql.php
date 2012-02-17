@@ -233,20 +233,33 @@ class Mysql extends \Lycan\Record\Query
     private function _includes($include, $collection, $model)
     {
         if ( is_array($include) && !is_numeric(key($include)) ) {
+            // we have chain associations to include
             foreach($include as $k=>$v){
+                // include the parent association first (indicated by $k). 
+                // return the included collection as $c. $collection already 
+                // merged association records.
                 $c = $this->_includes($k, $collection, $model);
+                // now if we have multiple includes, include them with parent 
+                // class classify($k) to $c collection
                 if ( is_array($v)) {
                     $class = \Lycan\Support\Inflect::classify($k);
-                    $this->_includes($v, $c,$class );
+                    $this->_includes($v, $c, $class);
+                // if we have not multiply includes just include it with parent
+                // classify($v) to $c collection
                 } else {
                     $class = \Lycan\Support\Inflect::classify($v);
                     $this->_includes($v, $c, $class);
                 }
             }
+        } elseif ( is_array($include) && is_numeric(key($include)) ) {
+            // just regular includes. not chains.
+            foreach ( $include as $i ) {
+                $this->_includes($i, $collection, $model);
+            }
+            // here we make the merge of the associations to main $collection 
+            // dependent association type
         } else {
-            if ( is_array($include) ) $include = current($include);
-            if ( $type = \Lycan\Record\Associations::associationTypeFor($include, 
-                $model)
+            if ( $type = \Lycan\Record\Associations::associationTypeFor($include, $model)
             ) {
                 $association = "\\Lycan\\Record\\Associations\\".Inflect::classify($type);
                 return $association::bindObjectsToCollection($collection, 
@@ -273,8 +286,10 @@ class Mysql extends \Lycan\Record\Query
             // include extra queries for fetching associations
             foreach( $this->includes as $k=>$include ) {
                 if ( !is_numeric($k) ) {
+                    // chain association detected so call _includes method 
+                    // including $k
                     $this->_includes(array($k => $include), $collection,$model);
-                } else { 
+                } else {
                     $this->_includes($include, $collection,$model);
                 }
             }
