@@ -33,7 +33,8 @@ class HasOne extends \Lycan\Record\Associations\Single
 
         $join_table = $class::$table;
         $table = $model::$table;
-        return "INNER JOIN `$join_table` ON `$join_table`.{$foreign_key} = `$table`.$primary_key";           
+        $query->innerJoin($join_table, "{$join_table}.{$foreign_key}","{$table}.{$primary_key}");
+        #return "INNER JOIN `$join_table` ON `$join_table`.{$foreign_key} = `$table`.$primary_key";           
     }
 
     protected static function foreign_key($name, $model, $options)

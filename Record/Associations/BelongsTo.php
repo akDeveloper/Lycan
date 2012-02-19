@@ -33,7 +33,8 @@ class BelongsTo extends \Lycan\Record\Associations\Single
         list($class, $foreign_key, $primary_key) = self::set_options($name, $model, $options);
         $join_table = $class::$table;
         $table = $model::$table;
-        return "INNER JOIN `$join_table` ON `$join_table`.{$class::$primary_key} = `$table`.$foreign_key";
+        $query->innerJoin($join_table, "{$join_table}.{$class::$primary_key}", "{$table}.{$foreign_key}");
+        #return "INNER JOIN `$join_table` ON `$join_table`.{$class::$primary_key} = `$table`.$foreign_key";
     } 
 
     protected static function foreign_key($name, $model, $options)

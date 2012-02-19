@@ -13,6 +13,10 @@ abstract class Query
     protected $count;
 
     protected $limit;
+
+    protected $order_by;
+
+    protected $group_by;
     
     protected $offset = 0;
 
@@ -81,9 +85,9 @@ abstract class Query
 
     abstract public function from($table);
 
-    abstract public function group($args);
+    abstract public function groupBy($args);
 
-    abstract public function order($args);
+    abstract public function orderBy($args);
 
     abstract public function all();
     

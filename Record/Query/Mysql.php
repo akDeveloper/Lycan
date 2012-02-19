@@ -34,7 +34,7 @@ class Mysql extends \Lycan\Record\Query
             /* Example:
              * ->where("id = '1' or username = 'John'")
              */
-            $_condition = $conditions;
+            $condition = $conditions;
         } elseif (is_array($conditions)) {
             /* Example:
              * ->where(array('id = ? and username = ?', '1', 'John') )
@@ -102,20 +102,22 @@ class Mysql extends \Lycan\Record\Query
         return $this;
     }
 
-    public function group($args)
+    public function groupBy($args)
     {
+        $this->group_by = $args;
+        return $this;
     }
 
-    public function order($args)
+    public function orderBy($args)
     {
         if (is_string($args)) {
-            $this->order = $args;
+            $this->order_by = $args;
         } elseif (is_array($args)) {
             if (!isset($args['field']) && !isset($args['order']))
                 return $this;
             $field = $args['field'];
             $order = strtolower($args['order']) == 'desc' || strtolower($order['order']) == 'asc' ? $args['order'] : '';
-            $this->order = "{$field} ${order}";
+            $this->order_by = "{$field} ${order}";
         }
         return $this;
     }
@@ -123,6 +125,27 @@ class Mysql extends \Lycan\Record\Query
     public function having()
     {
     
+    }
+
+    public function innerJoin($join_table, $primary_key, $foreign_key, $additional = null)
+    {
+        $this->_join("INNER", $join_table, $primary_key, $foreign_key, $additional);
+        return $this;
+    }
+
+    public function leftJoin($join_table, $primary_key, $foreign_key, $additional = null)
+    {
+        $this->_join("LEFT", $join_table, $primary_key, $foreign_key, $additional);
+        return $this;
+    }
+
+    private function _join($join_type, $join_table, $primary_key, $foreign_key, $additional = null)
+    {
+        list($pri_table, $pri_field) = explode('.', $primary_key);
+        #$this->_joined_tables[$join_table][$table] = $field;
+        list($for_table, $for_field) = explode('.', $foreign_key);
+        #$this->_joined_tables[$join_table][$table] = $field;
+        $this->join_queries[] = "{$join_type} JOIN `{$join_table}` ON (`{$pri_table}`.{$pri_field} = `{$for_table}`.{$for_field} {$additional}) "; 
     }
 
     public function joins($models)
@@ -137,7 +160,7 @@ class Mysql extends \Lycan\Record\Query
             foreach ($this->joins as $join) {
                 if ( $type = \Lycan\Record\Associations::associationTypeFor($join, $model)) {
                     $association = "\\Lycan\\Record\\Associations\\".Inflect::classify($type);
-                    $this->join_queries[] = $association::joinQuery($this, $join, $model,
+                    $association::joinQuery($this, $join, $model,
                         isset($model::$$type[$join]) 
                         ? $model::$$type[$join] 
                         : array()
