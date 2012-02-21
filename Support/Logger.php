@@ -29,7 +29,7 @@ class Logger extends \SplFileObject
         $buffer = self::COLOR_SEQ . self::GREEN
                 . "Started at : [" . date('H:i:s d-m-Y', time()) . "]"
                 . self::RESET_SEQ;
-        self::getLogger()->log($buffer);
+        static::getLogger()->log($buffer);
     }
 
     public static function stopLogging()
@@ -41,16 +41,16 @@ class Logger extends \SplFileObject
             . number_format( (memory_get_usage(true) - self::$memory) / (1024), 0, ",", "." )
             ." kb)"
             . self::RESET_SEQ;
-        self::getLogger()->log($buffer);
+        static::getLogger()->log($buffer);
     }
 
     public static function getLogger($env=null, $open_mode="a")
     {
-        if (self::$logger_instance) return self::$logger_instance; 
+        if (static::$logger_instance) return static::$logger_instance; 
         $env = $env ?: ENV;
         $filename = APP_PATH . 'log' . DS . $env . '.log';
-        self::$logger_instance = new static($filename,$open_mode);
-        return self::$logger_instance; 
+        static::$logger_instance = new static($filename,$open_mode);
+        return static::$logger_instance; 
     }
 
     public function __construct($filename=null, $open_mode = "a")
