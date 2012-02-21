@@ -46,7 +46,7 @@ class Mysql extends \Lycan\Record\Adapter
 
     public function getQuery($class_name=null, $options = array())
     {
-        return new \Lycan\Record\Query\Mysql($class_name, $options);
+        return new \Lycan\Record\Query\Sql($class_name, $options);
     }
 
     /**

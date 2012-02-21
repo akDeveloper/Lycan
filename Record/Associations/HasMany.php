@@ -48,16 +48,6 @@ class HasMany extends \Lycan\Record\Associations\Collection
         $this->primary_key_value($model);
     }
 
-    public function build($attributes=array())
-    {
-    
-    }
-
-    public function create($attributes=array())
-    {
-    
-    }
-
     public function set($value, $offset=null)
     {
         $association = $this->association;
@@ -83,7 +73,7 @@ class HasMany extends \Lycan\Record\Associations\Collection
 
     public function getIds() 
     {
-    
+        
     }
     
     public function setIds(array $ids)

@@ -50,16 +50,6 @@ class BelongsTo extends \Lycan\Record\Associations\Single
         $this->foreign_key_value($model);
     }
 
-    public function build($attributes=array())
-    {
-    
-    }
-
-    public function create($attributes=array())
-    {
-    
-    }
-
     public function saveAssociation()
     {
         $associate = $this->fetch();

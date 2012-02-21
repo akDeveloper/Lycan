@@ -133,27 +133,6 @@ abstract class Associations
         throw new \Exception(__FUNCTION__ . " must be implemented.");
     }
 
-    public function __construct($name, $model, $options)
-    {
-        $this->name = $name;
-        $this->model = get_class($model);
-        $this->model_instance = $model;
-        $this->options = $options; 
-        list($this->association, $this->foreign_key, $this->primary_key) = self::set_options($name, $this->model, $options);
-    }
-
-    public function __get($attribute)
-    {   
-        $fetch = $this->fetch();
-        return  $fetch ? $fetch->$attribute : null;
-    }
-
-
-    public function needSave()
-    {
-        return $this->marked_for_save === true;
-    }
-
     protected static function primary_key($model, $options)
     {
         return isset($options['primary_key'])
@@ -166,6 +145,42 @@ abstract class Associations
         return isset($options['class_name'])
             ? $options['class_name']
             : Inflect::classify($name);    
+    }
+
+    public function __construct($name, $model, $options)
+    {
+        $this->name = $name;
+        $this->model = get_class($model);
+        $this->model_instance = $model;
+        $this->options = $options; 
+        list($this->association, $this->foreign_key, $this->primary_key) = self::set_options($name, $this->model, $options);
+    }
+
+    public function build($attributes=array())
+    {
+        $class = $this->association;
+        $new = new $class($attributes);
+        $this->set($new);
+        return $new;
+    }
+
+    public function create($attributes=array())
+    {
+        $new_class = $this->build($attributes);
+        $new_class->save();
+        return $new_class;
+    }
+
+    public function __get($attribute)
+    {   
+        $fetch = $this->fetch();
+        return  $fetch ? $fetch->$attribute : null;
+    }
+
+
+    public function needSave()
+    {
+        return $this->marked_for_save === true;
     }
 
     protected function magic_method_call($method, $args, $instance)

@@ -50,15 +50,6 @@ class HasOne extends \Lycan\Record\Associations\Single
         $this->primary_key_value($model);
     }
 
-    public function build($attributes=array())
-    {
-    
-    }
-
-    public function create($attributes=array())
-    {
-    }
-
     public function saveAssociation()
     {
         $associate = $this->fetch();
@@ -99,8 +90,8 @@ class HasOne extends \Lycan\Record\Associations\Single
             }
         }
 
+        $associate->{$this->foreign_key} = $this->primary_key_value;
         if ( null !== $associate->{$association::$primary_key} ) {
-            $associate->{$this->foreign_key} = $this->primary_key_value;
             if ( $associate->save() ){
                 $this->result_set = $associate;
                 return $associate;
