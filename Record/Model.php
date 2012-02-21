@@ -159,35 +159,35 @@ abstract class Model extends Callbacks implements \SplSubject
      * Finder methods
      */
 
-    public static function find($as_object=false, $options=array())
+    public static function find($id=null, $options=array())
     {
-        $options = self::_options_for_finder($as_object, $options);
-        $options = array_merge($options, array('fetch_method' => 'one'));
-        return static::getAdapter()->getQuery(get_called_class(), $options);
+        $options = self::_options_for_finder($options);
+        if ( null==$id )
+            return static::getAdapter()->getQuery(get_called_class(), $options);
+        else
+            return static::getAdapter()->getQuery(get_called_class(), $options)->where(array('id' => (int) $id))->fetch();
     }
 
-    public static function all($as_object=false, $options=array())
+    public static function all($options=array())
     {
-        $options = self::_options_for_finder($as_object, $options);
-        $options = array_merge($options, array('fetch_method' => 'all'));
+        $options = self::_options_for_finder($options);
         return static::getAdapter()->getQuery(get_called_class(), $options)->all();
     }
 
-    public static function first($as_object=false, $options=array())
+    public static function first($options=array())
     {
         $options = array_merge($options, array('fetch_method' => 'one'));
-        return self::find($as_object, $options)->first();
+        return self::find(null, $options)->first();
     }
 
-    public static function last($as_object=false, $options=array())
+    public static function last($options=array())
     {
         $options = array_merge($options, array('fetch_method' => 'one'));
-        return self::find($as_object, $options)->last();
+        return self::find(null, $options)->last();
     }
 
-    private static function _options_for_finder($as_object, $options)
+    private static function _options_for_finder($options)
     {
-        $options['as_object'] = $as_object;
         if ( isset($options['readonly']) ) $this->readony = $options['readonly'];
 
         return $options;
