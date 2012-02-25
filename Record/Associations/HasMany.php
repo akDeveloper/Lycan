@@ -32,7 +32,6 @@ class HasMany extends \Lycan\Record\Associations\Collection
         $join_table = $class::$table;
         $table = $model::$table;
         $query->innerJoin($join_table, "{$join_table}.{$foreign_key}", "{$table}.{$primary_key}");
-        #return "INNER JOIN `$join_table` ON `$join_table`.{$foreign_key} = `$table`.$primary_key";        
     }
 
     protected static function foreign_key($name, $model, $options)
@@ -71,16 +70,6 @@ class HasMany extends \Lycan\Record\Associations\Collection
         }
     }
 
-    public function getIds() 
-    {
-        
-    }
-    
-    public function setIds(array $ids)
-    {
-    
-    }
-
     public function all()
     {
         $find = $this->find();
@@ -97,30 +86,6 @@ class HasMany extends \Lycan\Record\Associations\Collection
                 ->where(array($this->foreign_key => $this->primary_key_value));
         }
         return $this->result_set; 
-    }
-   
-    public function delete($value)
-    {
-    
-    }
-    
-    public function clear()
-    {
-    }
-
-    public function isEmpty()
-    {
-        return $this->all()->isEmpty();
-    }
-
-    public function size()
-    {
-        return $this->all()->count(); 
-    }
-
-    public function exists()
-    {
-    
     }
     
     protected function primary_key_value($model)

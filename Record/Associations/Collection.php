@@ -14,6 +14,36 @@ abstract class Collection extends \Lycan\Record\Associations implements Interfac
         $this->result_set = $collection;
     }
 
+    public function isEmpty()
+    {
+        return $this->all()->isEmpty();
+    }
+
+    public function size()
+    {
+        return $this->all()->count(); 
+    }
+
+    public function getIds() 
+    {
+        $association = $this->association;
+        return $this->all()->toArray($association::$primary_key);
+    }
+    
+    public function setIds(array $ids)
+    {
+    
+    }
+
+    public function clear()
+    {
+    }
+
+    public function exists()
+    {
+    
+    }
+
     /**
      * IteratorAggregate
      */
@@ -42,6 +72,7 @@ abstract class Collection extends \Lycan\Record\Associations implements Interfac
 
     public function offsetUnset ( $offset )
     {
-        $this->all()->offsetUnset( $offset );
+        $object = $this[$offset];
+        $this->delete($object, $offset);
     }
 }
