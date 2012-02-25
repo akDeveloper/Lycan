@@ -32,12 +32,16 @@ class Sql extends \Lycan\Record\Query
     {
         if (is_string($conditions)) {
             /* Example:
-             * ->where("id = '1' or username = 'John'")
+             * <code>
+             * Object::find()->where("id = '1' or username = 'John'")
+             * </code>
              */
             $condition = $conditions;
         } elseif (is_array($conditions)) {
             /* Example:
-             * ->where(array('id = ? and username = ?', '1', 'John') )
+             * <code>
+             * Object::find()->where(array('id = ? and username = ?', '1', 'John') )
+             * </code>
              */
             $array_keys = array_keys($conditions);
             if (reset($array_keys) === 0 &&
@@ -52,7 +56,9 @@ class Sql extends \Lycan\Record\Query
             }  else {
                 /* associative array
                  * Example:
-                 * ->where(array('id'=>array('1','2'), 'name' =>'John') )
+                 * <code>
+                 * Object::find()->where(array('id'=>array('1','2'), 'name' =>'John') )
+                 * </code>
                  */
                 $condition = " ( ";
                 $w = array();
@@ -142,9 +148,7 @@ class Sql extends \Lycan\Record\Query
     private function _join($join_type, $join_table, $primary_key, $foreign_key, $additional = null)
     {
         list($pri_table, $pri_field) = explode('.', $primary_key);
-        #$this->_joined_tables[$join_table][$table] = $field;
         list($for_table, $for_field) = explode('.', $foreign_key);
-        #$this->_joined_tables[$join_table][$table] = $field;
         $this->join_queries[] = "{$join_type} JOIN `{$join_table}` ON (`{$pri_table}`.{$pri_field} = `{$for_table}`.{$for_field} {$additional}) "; 
     }
 
@@ -220,12 +224,21 @@ class Sql extends \Lycan\Record\Query
         return $this;
     }
 
-    public function compileInsert($attributes)
+    public function compileInsert(array $attributes)
     {
         $attributes = array_map(array($this,'_prepare_value'),$attributes);
         $keys = implode(', ', array_keys($attributes));
         $values = implode(', ', $attributes);
         $this->query = "INSERT INTO `{$this->table()}` ({$keys}) VALUES ({$values})";
+        return $this; 
+    }
+
+    public function compileDelete()
+    {
+        if ( empty($this->where) )
+            throw new BadMethodCallException('You must call `where` method before call compileDelete method');
+
+        $this->query = "DELETE FROM `{$this->table()}` WHERE {$this->where}";
         return $this; 
     }
 
@@ -338,7 +351,7 @@ class Sql extends \Lycan\Record\Query
         $args = $this->select;
 
         if (!is_array($args))
-            $args = array_map('trim', explode(',', $args));
+            $args = array_unique(array_map('trim', explode(',', $args)));
 
         $select = "";
         foreach ($args as $a) {
