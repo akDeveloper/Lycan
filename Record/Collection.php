@@ -72,9 +72,9 @@ class Collection implements \Iterator, \Countable, \ArrayAccess
             // Key column name
         } elseif (null !== $keyColumn && null === $valueColumn) {
             $return = array();
-            foreach ($this->results as $row) {
+            foreach ($this->results as $k=>$row) {
                 if (($row->$keyColumn))
-                    $return[] = $row->$keyColumn;
+                    $return[$k] = $row->$keyColumn;
             }
 
             // Both key and valid columns filled in
@@ -91,21 +91,37 @@ class Collection implements \Iterator, \Countable, \ArrayAccess
     public function select($search_value, $field_value)
     {
         $return = array();
-        foreach ($this->results as $row) {
-            if ($search_value == $row->$field_value)
-                $return[] = $row;
-        }
+        
+        $return = array_filter($this->results, function($row) use ($search_value, $field_value){
+            return $search_value == $row->$field_value;
+        });
+        
         return new self($return);
     }
 
     public function detect($search_value, $field_value)
     {
-        $return = null;
-        foreach ($this->results as $row) {
-            if ($search_value == $row->$field_value)
-                return $row;
+        $return = array(null);
+        $return = array_filter($this->results, function($row) use ($search_value, $field_value){
+            return $search_value == $row->$field_value;
+        });
+        return current($return);
+    }
+
+
+    public function delete($search_value, $field_value)
+    {
+        $array = $this->select($search_value, $field_value)->toArray();
+        if (!empty($array))
+            unset($this->results[key($array)]);
+        /*
+        foreach ($this->results as $k=>$row) {
+            if ($search_value == $row->$field_value){
+                unset($this->results[$k]);
+                break;
+            }
         }
-        return $return;
+        */
     }
 
     public function toJson()
