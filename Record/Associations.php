@@ -153,7 +153,7 @@ abstract class Associations
         $this->model = get_class($model);
         $this->model_instance = $model;
         $this->options = $options; 
-        list($this->association, $this->foreign_key, $this->primary_key) = self::set_options($name, $this->model, $options);
+        list($this->association, $this->foreign_key, $this->primary_key) = static::set_options($name, $this->model, $options);
     }
 
     public function build($attributes=array())
