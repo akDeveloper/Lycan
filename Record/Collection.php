@@ -114,14 +114,6 @@ class Collection implements \Iterator, \Countable, \ArrayAccess
         $array = $this->select($search_value, $field_value)->toArray();
         if (!empty($array))
             unset($this->results[key($array)]);
-        /*
-        foreach ($this->results as $k=>$row) {
-            if ($search_value == $row->$field_value){
-                unset($this->results[$k]);
-                break;
-            }
-        }
-        */
     }
 
     public function toJson()
@@ -192,11 +184,7 @@ class Collection implements \Iterator, \Countable, \ArrayAccess
 
     public function offsetUnset($key)
     {
-        if (is_int($key)) {
-            array_splice($this->results, $key, 1);
-        } else {
-            unset($this->results[$key]);
-        }
+        unset($this->results[$key]);
     }
 
     // ----------------------------------------------
