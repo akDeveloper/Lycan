@@ -67,7 +67,7 @@ abstract class Collection extends \Lycan\Record\Associations implements Interfac
 
     public function offsetSet ( $offset , $value )
     {
-        $this->set($value, $offset);
+        $this->add($value, $offset);
     }
 
     public function offsetUnset ( $offset )
