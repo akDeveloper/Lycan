@@ -23,6 +23,8 @@ class HasOne extends \Lycan\Record\Associations\Single
             $detect = $has_one->detect($value->$primary_key, $foreign_key);
             if ( null != $detect )
                 $value->$name->setWith($detect);
+            else
+                $value->$name->setWith(new \Lycan\Record\Null());
         }
         return $has_one;
     }
@@ -34,7 +36,6 @@ class HasOne extends \Lycan\Record\Associations\Single
         $join_table = $class::$table;
         $table = $model::$table;
         $query->innerJoin($join_table, "{$join_table}.{$foreign_key}","{$table}.{$primary_key}");
-        #return "INNER JOIN `$join_table` ON `$join_table`.{$foreign_key} = `$table`.$primary_key";           
     }
 
     protected static function foreign_key($name, $model, $options)
@@ -106,16 +107,10 @@ class HasOne extends \Lycan\Record\Associations\Single
             
     }
 
-    public function fetch()
-    {
-        $find = $this->find();
-        return $find instanceof \Lycan\Record\Query ? $find->fetch() : $find;
-    }
-
     public function find($force_reload=false)
     {
         if ((null == $this->result_set && null != $this->primary_key_value) 
-            || $force_reload
+            || $force_reload || $this->result_set instanceof \Lycan\Record\Model
         ) {
             $association = $this->association;
             $this->result_set = $association::find()

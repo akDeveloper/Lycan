@@ -24,6 +24,8 @@ class BelongsTo extends \Lycan\Record\Associations\Single
                 : $belongs_to->detect($value->$foreign_key, $primary_key);
             if ( null != $detect )
                 $value->$name->setWith($detect);
+            else
+                $value->$name->setWith(new \Lycan\Record\Null());
         }
         return $belongs_to;
     }
@@ -34,7 +36,6 @@ class BelongsTo extends \Lycan\Record\Associations\Single
         $join_table = $class::$table;
         $table = $model::$table;
         $query->innerJoin($join_table, "{$join_table}.{$class::$primary_key}", "{$table}.{$foreign_key}");
-        #return "INNER JOIN `$join_table` ON `$join_table`.{$class::$primary_key} = `$table`.$foreign_key";
     } 
 
     protected static function foreign_key($name, $model, $options)
@@ -69,7 +70,7 @@ class BelongsTo extends \Lycan\Record\Associations\Single
     public function set(\Lycan\Record\Model $associate)
     {
         $association = $this->association;
-
+        
         if ( null !== $associate->{$association::$primary_key} )
             $this->model_instance->{$this->foreign_key} = $associate->{$association::$primary_key};
         else
@@ -78,15 +79,11 @@ class BelongsTo extends \Lycan\Record\Associations\Single
         $this->result_set = $associate; 
     }
 
-    public function fetch()
+    public function find($force_reload=false)
     {
-        $find = $this->find();
-        return $find instanceof \Lycan\Record\Query ? $find->fetch() : $find;
-    }
-
-    public function find()
-    {
-        if ( null == $this->result_set && null != $this->foreign_key_value) {
+        if (null == $this->result_set && null != $this->foreign_key_value 
+            || $force_reload || $this->result_set instanceof \Lycan\Record\Model
+        ) {
             $association = $this->association;
             $this->result_set = $association::find()
                 ->where(array($association::$primary_key => $this->foreign_key_value));
