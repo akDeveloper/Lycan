@@ -52,11 +52,6 @@ abstract class Query
         }
     }
 
-    public function getQuery()
-    {
-        return $this->query;
-    }
-
     public function getBindParams()
     {
         return $this->bind_params;
