@@ -86,11 +86,10 @@ abstract class Model extends Callbacks implements \SplSubject
      */
     public function __get($attribute)
     {
-        if (in_array($attribute, static::$columns))
-            return $this->persistence->attributes->get($attribute);
-
         if ( $assoc = $this->_association_for($attribute) )
             return $assoc;
+
+        return $this->persistence->attributes->get($attribute);
 
         throw new InvalidPropertyException(get_class($this), $attribute);
     }
