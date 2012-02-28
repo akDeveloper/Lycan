@@ -46,7 +46,7 @@ class Mysql extends \Lycan\Record\Adapter
 
     public function getQuery($class_name=null, $options = array())
     {
-        return new \Lycan\Record\Query\Sql($class_name, $options);
+        return new \Lycan\Record\Query\MySql($class_name, $options);
     }
 
     /**
@@ -66,7 +66,7 @@ class Mysql extends \Lycan\Record\Adapter
     public function query(\Lycan\Record\Query $query)
     {
         $start = microtime(true);
-        $res = $this->connection()->query($query->getQuery());        
+        $res = $this->connection()->query($query->__toString());        
 
         $this->logger->logQuery($query, $query->getClassName(), microtime(true) - $start);
 

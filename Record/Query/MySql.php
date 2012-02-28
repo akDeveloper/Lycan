@@ -6,7 +6,7 @@ namespace Lycan\Record\Query;
 
 use Lycan\Support\Inflect;
 
-class Sql extends \Lycan\Record\Query
+class MySql extends \Lycan\Record\Query
 {
     private $_select_values;
     private $_tables_for_join;
@@ -200,6 +200,7 @@ class Sql extends \Lycan\Record\Query
     public function first()
     {
         $this->limit(1);
+        $this->fetch_method = 'one';
         return $this->_fetch_data();
     }
 
@@ -208,6 +209,7 @@ class Sql extends \Lycan\Record\Query
         $class_name = $this->class_name;
         $this->limit(1);
         $this->order("{$class_name::$primary_key} DESC");
+        $this->fetch_method = 'one';
         return $this->_fetch_data();
     }
 
@@ -229,7 +231,7 @@ class Sql extends \Lycan\Record\Query
         $attributes = array_map(array($this,'_prepare_value'),$attributes);
         $keys = implode(', ', array_keys($attributes));
         $values = implode(', ', $attributes);
-        $this->query = "INSERT INTO `{$this->table()}` ({$keys}) VALUES ({$values})";
+        $this->query = "INSERT INTO {$this->table()} ({$keys}) VALUES ({$values})";
         return $this; 
     }
 
@@ -238,7 +240,7 @@ class Sql extends \Lycan\Record\Query
         if ( empty($this->where) )
             throw new BadMethodCallException('You must call `where` method before call compileDelete method');
 
-        $this->query = "DELETE FROM `{$this->table()}` WHERE {$this->where}";
+        $this->query = "DELETE FROM {$this->table()} WHERE {$this->where}";
         return $this; 
     }
 
@@ -317,7 +319,6 @@ class Sql extends \Lycan\Record\Query
 
         $collection = new \Lycan\Record\Collection($records);
         
-
         if ( !$collection->isEmpty() && !empty($this->includes) ) {
             // include extra queries for fetching associations
             foreach( $this->includes as $k=>$include ) {
@@ -349,10 +350,10 @@ class Sql extends \Lycan\Record\Query
     {
         if ( null === $this->select ) return;
         $args = $this->select;
-
+        
         if (!is_array($args))
             $args = array_unique(array_map('trim', explode(',', $args)));
-
+        
         $select = "";
         foreach ($args as $a) {
             $table = $this->table();
@@ -373,6 +374,8 @@ class Sql extends \Lycan\Record\Query
 
     protected function build_sql()
     {
+        if (null != $this->query) return $this->query;
+
         $class = $this->class_name;
 
         if ( !empty($this->join_queries) ) $this->select("`{$class::$table}`.*");
@@ -398,6 +401,16 @@ class Sql extends \Lycan\Record\Query
             $query .= " LIMIT {$this->offset},{$this->limit}";
         $this->query = $query;
         return $this->query;
+    }
+
+    public function __toString()
+    {
+        return $this->toSql();
+    }
+
+    public function toSql()
+    {
+        return null == $this->query ? $this->build_sql() : $this->query;
     }
 
     protected function unapostrophe($string)
