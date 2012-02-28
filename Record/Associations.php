@@ -166,17 +166,12 @@ abstract class Associations
 
     public function create($attributes=array())
     {
-        $new_class = $this->build($attributes);
-        $new_class->save();
-        return $new_class;
+        $class = $this->association;
+        $new = new $class($attributes);
+        $new->save();
+        $this->set($new);
+        return $new;
     }
-
-    public function __get($attribute)
-    {   
-        $fetch = $this->fetch();
-        return  $fetch ? $fetch->$attribute : null;
-    }
-
 
     public function needSave()
     {
