@@ -11,17 +11,17 @@ interface Collection
 
     public function create($attributes=array());
     
-    public function set($value, $offset=null);
+    public function set(\Lycan\Record\Collection $collection);
     
     public function getIds();
     
     public function setIds(array $ids);
     
-    public function all();
-    
     public function find($force_reload=false);
     
-    public function delete($value);
+    public function delete($object, $offset=null, $adapter=null);
+    
+    public function add($object, $offset=null, $adapter=null);
     
     public function clear();
 
