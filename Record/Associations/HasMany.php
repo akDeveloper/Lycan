@@ -19,7 +19,7 @@ class HasMany extends \Lycan\Record\Associations\Collection
         $has_many = $class::find()
             ->where(array($foreign_key => $primary_key_values))
             ->all();
-        foreach ( $collection as $value ) {
+        foreach ($collection as $value) {
             $select = $has_many->select($value->$primary_key, $foreign_key);
             $value->$name->setWith($select);
         } 
@@ -47,39 +47,78 @@ class HasMany extends \Lycan\Record\Associations\Collection
         $this->primary_key_value($model);
     }
 
-    public function set($value, $offset=null)
+    public function add($object, $offset=null, $adapter=null)
     {
-        $association = $this->association;
-        
-        if (!($value instanceof $association) && !($value instanceof \Lycan\Record\Collection))
-            throw new \InvalidArgumentException("Invalid type ".gettype($value).". Expected $association or \Lycan\Record\Collection class instance");
+        if (!($object instanceof $association))
+            throw new \InvalidArgumentException("Invalid type ".gettype($object).". Expected $association class instance"); 
 
         $ids = $this->all()->toArray($association::$primary_key);
 
-        if ($value instanceof $association) {
-            $collection = new \Lycan\Record\Collection(array($value));
-        } elseif ($value instanceof \Lycan\Record\Collection) {
-            $collection = $value;
-        }
-        foreach ($collection as $v) {
-            if (!in_array($v->{$association::$primary_key}, $ids)) {
-                $v->{$this->foreign_key} = $this->primary_key_value;
-                if ( $v->save() )
-                    $this->all()->offsetSet($offset, $v);
-            }           
+        if (!in_array($object->{$association::$primary_key}, $ids)) {
+            $object->{$this->foreign_key} = $this->primary_key_value;
+            if ($object->save())
+                $this->all()->offsetSet($offset, $v);
         }
     }
 
-    public function all()
+    public function delete($object, $offset=null, $adapter=null)
     {
-        $find = $this->find();
-        return $find instanceof \Lycan\Record\Collection ? $find : $find->all();
+        $association = $this->association;
+
+        if (!($object instanceof $association))
+            throw new \InvalidArgumentException("Invalid type ".gettype($object).". Expected $association class instance");
+
+        $adapter = $adapter ?: \Lycan\Record\Model::getAdapter();
+        
+        if( isset($this->options['dependent']) ) {
+            switch ($this->options['dependent']) {
+            case 'destory':
+                $object->destroy();
+                break;
+            case 'delete':
+                $object->destroy();
+                break;
+            default:
+                $object->{$this->foreign_key} = null;
+                $object->save();
+                break;
+            }
+        } else {
+            $object->{$this->foreign_key} = null;
+            $object->save();
+        }
+        
+        if (null === $offset) 
+            $this->all()->delete($object->{$association::$primary_key}, $association::$primary_key);
+        else
+            $this->all()->offsetUnset($offset);
+    }
+
+    public function set(\Lycan\Record\Collection $collection)
+    {
+        $association = $this->association;
+        
+        $ids = $this->all()->toArray($association::$primary_key);
+        $new_ids = $collection->toArray($association::$primary_key);
+        
+        $to_add = array_diff($new_ids, $ids);
+        $to_delete = array_diff($ids, $new_ids);       
+        
+        $adapter = $association::getAdapter();
+
+        foreach ($collection as $v) {
+            if ( in_array($v->{$association::$primary_key}, $to_add) ) {
+                $this->add($v, null, $adapter);
+            } elseif( in_array($v->{$association::$primary_key}, $to_delete)) {
+                $this->delete($v, null, $adapter); 
+            }
+        }
     }
 
     public function find($force_reload=false)
     {
         if ((null == $this->result_set && null != $this->primary_key_value) 
-            || $force_reload
+            || $force_reload || $this->result_set instanceof \Lycan\Record\Collection
         ) {
             $association = $this->association;
             $this->result_set = $association::find()

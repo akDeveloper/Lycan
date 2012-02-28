@@ -8,6 +8,26 @@ use Lycan\Support\Inflect;
 
 abstract class Collection extends \Lycan\Record\Associations implements Interfaces\Collection, \IteratorAggregate, \ArrayAccess
 {
+    /**
+     * Tries to execute missing methods 
+     * from @see Lycan\Record\Association::result_set instance
+     *
+     * @return mixed the result of missing method if will find one.
+     */
+    public function __call($method, $args)
+    {
+        return $this->magic_method_call($method, $args, $this->all());
+    }
+
+    protected function all()
+    {
+        if (   null == $this->result_set 
+            || $this->result_set instanceof \Lycan\Record\Query
+        ){
+            $this->result_set = $this->find()->all();
+        }
+        return $this->result_set;
+    }
 
     public function setWith(\Lycan\Record\Collection $collection)
     {
