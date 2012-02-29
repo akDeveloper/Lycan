@@ -19,9 +19,9 @@ class Collection implements \Iterator, \Countable, \ArrayAccess
      */
     public function first()
     {
-        if (isset($this->results[0])) {
-            return $this->results[0];
-        }
+        if (!empty($this->results))
+            return reset($this->results);
+
         return null;
     }
 
@@ -30,9 +30,9 @@ class Collection implements \Iterator, \Countable, \ArrayAccess
      */
     public function last()
     {
-        if (isset($this->results[$this->count() - 1])) {
-            return $this->results[$this->count() - 1];
-        }
+        if (!empty($this->results))
+            return end($this->results);
+
         return null;
     }
 
@@ -41,21 +41,21 @@ class Collection implements \Iterator, \Countable, \ArrayAccess
         return empty($this->results);
     }
 
-    public function map( \Closure $block ) 
+    public function map(\Closure $block) 
     {
-        return new self( array_map( $block, array_keys($this->results), $this->results ) );
+        return new self(array_map($block, array_keys($this->results), $this->results));
     }
 
-    public function each_with_index( \Closure $block ) 
+    public function each_with_index(\Closure $block) 
     {
-        foreach( $this->results as $key => $value ){
+        foreach ($this->results as $key => $value) {
             $block($key, $value);
         }
     }
 
-    public function each( \Closure $block ) 
+    public function each(\Closure $block)
     {
-        foreach( $this->results as $value ){
+        foreach ($this->results as $value) {
             $block($value);
         }
     }
