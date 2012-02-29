@@ -19,9 +19,9 @@ interface Collection
     
     public function find($force_reload=false);
     
-    public function delete($object, $offset=null, $adapter=null);
+    public function delete($object);
     
-    public function add($object, $offset=null, $adapter=null);
+    public function add($object);
     
     public function clear();
 

@@ -64,6 +64,16 @@ abstract class Collection extends \Lycan\Record\Associations implements Interfac
     
     }
 
+    public function add($object)
+    {
+        $this->add_with_offset($object);
+    }
+
+    public function delete($object)
+    {
+        $this->delete_with_offset($object);
+    }
+
     /**
      * IteratorAggregate
      */
@@ -87,12 +97,12 @@ abstract class Collection extends \Lycan\Record\Associations implements Interfac
 
     public function offsetSet ( $offset , $value )
     {
-        $this->add($value, $offset);
+        $this->add_with_offset($value, $offset);
     }
 
     public function offsetUnset ( $offset )
     {
         $object = $this[$offset];
-        $this->delete($object, $offset);
+        $this->delete_with_offset($object, $offset);
     }
 }

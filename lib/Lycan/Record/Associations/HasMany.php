@@ -47,8 +47,10 @@ class HasMany extends \Lycan\Record\Associations\Collection
         $this->primary_key_value($model);
     }
 
-    public function add($object, $offset=null, $adapter=null)
+    protected function add_with_offset($object, $offset=null, $adapter=null)
     {
+        $association = $this->association;
+        
         if (!($object instanceof $association))
             throw new \InvalidArgumentException("Invalid type ".gettype($object).". Expected $association class instance"); 
 
@@ -57,11 +59,11 @@ class HasMany extends \Lycan\Record\Associations\Collection
         if (!in_array($object->{$association::$primary_key}, $ids)) {
             $object->{$this->foreign_key} = $this->primary_key_value;
             if ($object->save())
-                $this->all()->offsetSet($offset, $v);
-        }
+                $this->all()->offsetSet($offset, $object);
+        } 
     }
 
-    public function delete($object, $offset=null, $adapter=null)
+    protected function delete_with_offset($object, $offset=null, $adapter=null)
     {
         $association = $this->association;
 
@@ -106,13 +108,24 @@ class HasMany extends \Lycan\Record\Associations\Collection
         
         $adapter = $association::getAdapter();
 
-        foreach ($collection as $v) {
-            if ( in_array($v->{$association::$primary_key}, $to_add) ) {
-                $this->add($v, null, $adapter);
-            } elseif( in_array($v->{$association::$primary_key}, $to_delete)) {
-                $this->delete($v, null, $adapter); 
-            }
+        $objects_to_add = $collection->map(function($k, $v) use ($to_add, $association){
+            if (in_array($v->{$association::$primary_key}, $to_add))
+                return $v;
+        }); 
+        $objects_to_add->compact();
+        foreach ($objects_to_add as $v) {
+            $this->add_with_offset($v, null, $adapter);
         }
+        
+        $objects_to_delete = $this->all()->map(function($k, $v) use ($to_delete, $association){
+            if (in_array($v->{$association::$primary_key}, $to_delete))
+                return $v;
+        });
+        $objects_to_delete->compact();
+        foreach ($objects_to_delete as $k=>$v) {
+            $this->delete_with_offset($v, $k, $adapter); 
+        }
+        
     }
 
     public function find($force_reload=false)

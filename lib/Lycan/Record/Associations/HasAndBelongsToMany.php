@@ -91,24 +91,24 @@ class HasAndBelongsToMany extends \Lycan\Record\Associations\Collection
         $this->join_table = self::_get_join_table($this->model, $this->association, $this->options);
     }
 
-    public function add($object, $offset=null, $adapter=null)
+    protected function add_with_offset($object, $offset=null, $adapter=null)
     {
         $association = $this->association;
-        
+
         if (!($object instanceof $association))
             throw new \InvalidArgumentException("Invalid type ".gettype($object).". Expected $association class instance");
-        
+
         $ids = $this->all()->toArray($association::$primary_key);
-        
-        $adapter = $adapter ?: \Lycan\Record\Model::getAdapter();
-        
+
+        $adapter = $adapter ?: $association::getAdapter();
+
         if (!in_array($object->{$association::$primary_key}, $ids)) {
-            
+
             $attributes = array(
-                $this->association_foreign_key => $object->id,
+                $this->association_foreign_key => $object->{$association::$primary_key},
                 $this->foreign_key => $this->primary_key_value
             );
-            
+
             $query = $adapter
                 ->getQuery($this->association)
                 ->from($this->join_table)
@@ -119,8 +119,7 @@ class HasAndBelongsToMany extends \Lycan\Record\Associations\Collection
         }
     }
 
-
-    public function delete($object, $offset=null, $adapter=null)
+    public function delete_with_offset($object)
     {
         $association = $this->association;
 
@@ -128,7 +127,7 @@ class HasAndBelongsToMany extends \Lycan\Record\Associations\Collection
             throw new \InvalidArgumentException("Invalid type ".gettype($object).". Expected $association class instance"); 
 
         
-        $adapter = $adapter ?: \Lycan\Record\Model::getAdapter();
+        $adapter = $association::getAdapter();
         
         $query = $adapter
             ->getQuery($this->association)
@@ -139,13 +138,30 @@ class HasAndBelongsToMany extends \Lycan\Record\Associations\Collection
             ))->compileDelete();
         $adapter->query($query);
 
-        if (null === $offset) 
-            $this->all()->delete($object->{$association::$primary_key}, $association::$primary_key);
-        else
-            $this->all()->offsetUnset($offset);
+        $this->all()->delete($object->{$association::$primary_key}, $association::$primary_key);
 
     }
-
+    
+    private function _batch_delete($to_delete)
+    {
+        $association = $this->association;
+        $adapter = $association::getAdapter();
+        
+        $query = $adapter
+            ->getQuery($association)
+            ->from($this->join_table)
+            ->where(array(
+                $this->association_foreign_key=>$to_delete, 
+                $this->foreign_key => $this->primary_key_value
+            ))->compileDelete();
+        
+        $adapter->query($query);
+        
+        foreach ($to_delete as $id) {
+            $this->all()->delete($id, $association::$primary_key);
+        }
+    }
+    
     public function set(\Lycan\Record\Collection $collection)
     {
         $association = $this->association;
@@ -155,16 +171,22 @@ class HasAndBelongsToMany extends \Lycan\Record\Associations\Collection
 
         $to_add = array_diff($new_ids, $ids);
         $to_delete = array_diff($ids, $new_ids);
-
-        $adapter = $association::getAdapter();
         
-        foreach ($collection as $v) {
-            if ( in_array($v->{$association::$primary_key}, $to_add) ) {
-                $this->add($v, null, $adapter);
-            } elseif( in_array($v->{$association::$primary_key}, $to_delete)) {
-                $this->delete($v, null, $adapter); 
+        if (empty($to_add) && empty($to_delete)) return;
+
+        if (!empty($to_add)) {
+
+            $adapter = $association::getAdapter();
+            
+            foreach ($collection as $v) {
+                if ( in_array($v->{$association::$primary_key}, $to_add) ) {
+                    $this->add_with_offset($v, null, $adapter);
+                }
             }
         }
+
+        if (!empty($to_delete))
+            $this->_batch_delete($to_delete);
     }
 
     /**
