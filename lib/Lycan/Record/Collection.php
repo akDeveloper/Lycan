@@ -60,6 +60,11 @@ class Collection implements \Iterator, \Countable, \ArrayAccess
         }
     }
 
+    public function compact()
+    {
+        $this->results = array_filter($this->results);
+    }
+
     /**
      * ResultSet to array using given key/value columns
      */
@@ -108,12 +113,16 @@ class Collection implements \Iterator, \Countable, \ArrayAccess
         return current($return);
     }
 
-
     public function delete($search_value, $field_value)
     {
-        $array = $this->select($search_value, $field_value)->toArray();
-        if (!empty($array))
-            unset($this->results[key($array)]);
+        $array = array();
+        $array = array_filter($this->results, function($row) use ($search_value, $field_value){
+            return $search_value == $row->$field_value;
+        });
+        if (!empty($array)) {
+            $key = key($array);
+            unset($this->results[$key]);
+        }
     }
 
     public function toJson()
