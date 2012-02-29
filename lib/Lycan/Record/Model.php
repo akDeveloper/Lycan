@@ -158,6 +158,12 @@ abstract class Model extends Callbacks implements \SplSubject
      * Finder methods
      */
 
+    public static function findAllById(array $id, $options=array())
+    {
+        $options = self::_options_for_finder($options);
+        return static::getAdapter()->getQuery(get_called_class(), $options)->where(array('id' => $id))->all();
+    }
+
     public static function find($id=null, $options=array())
     {
         $options = self::_options_for_finder($options);
