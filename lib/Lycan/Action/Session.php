@@ -86,9 +86,9 @@ class Session
         $_SESSION[$name] = $value;
     }
 
-    public function setArrayVar($name, $value, $index='-1')
+    public function setArrayVar($name, $value, $index=null)
     {
-        if ($index == '-1')
+        if ($index == null)
             $_SESSION[$name][] = $value;
         else
             $_SESSION[$name][$index] = $value;
