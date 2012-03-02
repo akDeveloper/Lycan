@@ -119,7 +119,7 @@ class HasAndBelongsToMany extends \Lycan\Record\Associations\Collection
         }
     }
 
-    public function delete_with_offset($object)
+    protected function delete_with_offset($object, $offset=null)
     {
         $association = $this->association;
 
@@ -137,8 +137,11 @@ class HasAndBelongsToMany extends \Lycan\Record\Associations\Collection
                 $this->foreign_key => $this->primary_key_value
             ))->compileDelete();
         $adapter->query($query);
-
-        $this->all()->delete($object->{$association::$primary_key}, $association::$primary_key);
+        
+        if ($offset)
+            $this->all()->offsetUnset($offset);
+        else
+            $this->all()->delete($object->{$association::$primary_key}, $association::$primary_key);
 
     }
     
