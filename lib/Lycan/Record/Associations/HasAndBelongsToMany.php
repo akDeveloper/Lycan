@@ -91,6 +91,31 @@ class HasAndBelongsToMany extends \Lycan\Record\Associations\Collection
         $this->join_table = self::_get_join_table($this->model, $this->association, $this->options);
     }
 
+    public function saveAssociation()
+    {
+        $association = $this->association;
+        
+        $adapter = $association::getAdapter();
+
+        foreach($this->marked_for_save_objects as $object) {
+            
+            if (!$object->isPersisted()) $object->save();
+            
+            $attributes = array(
+                $this->association_foreign_key => $object->{$association::$primary_key},
+                $this->foreign_key => $this->primary_key_value
+            );
+
+            $query = $adapter
+                ->getQuery($association)
+                ->from($this->join_table)
+                ->compileInsert($attributes);
+            $adapter->insert($query);
+        }
+        
+        $this->marked_for_save = false;
+    }
+        
     protected function add_with_offset($object, $offset=null, $adapter=null)
     {
         $association = $this->association;
@@ -98,25 +123,33 @@ class HasAndBelongsToMany extends \Lycan\Record\Associations\Collection
         if (!($object instanceof $association))
             throw new \InvalidArgumentException("Invalid type ".gettype($object).". Expected $association class instance");
 
-        $ids = $this->all()->toArray($association::$primary_key);
+        if (null ===  $object->{$association::$primary_key}) {
 
-        $adapter = $adapter ?: $association::getAdapter();
+            $this->marked_for_save = true;
+            $this->marked_for_save_objects[] = $object;
 
-        if (!in_array($object->{$association::$primary_key}, $ids)) {
+        } else {
+            $ids = $this->all()->toArray($association::$primary_key);
 
-            $attributes = array(
-                $this->association_foreign_key => $object->{$association::$primary_key},
-                $this->foreign_key => $this->primary_key_value
-            );
+            $adapter = $adapter ?: $association::getAdapter();
 
-            $query = $adapter
-                ->getQuery($this->association)
-                ->from($this->join_table)
-                ->compileInsert($attributes);
-            $adapter->insert($query);
+            if (!in_array($object->{$association::$primary_key}, $ids)) {
 
-            $this->all()->offsetSet($offset, $object);
+                $attributes = array(
+                    $this->association_foreign_key => $object->{$association::$primary_key},
+                    $this->foreign_key => $this->primary_key_value
+                );
+
+                $query = $adapter
+                    ->getQuery($this->association)
+                    ->from($this->join_table)
+                    ->compileInsert($attributes);
+                $adapter->insert($query);
+            }
+
         }
+
+        $this->all()->offsetSet($offset, $object);
     }
 
     protected function delete_with_offset($object, $offset=null)

@@ -47,11 +47,13 @@ abstract class Model extends Callbacks implements \SplSubject
     );
 
     protected $after_save = array(
-        'has_one_associations_callbacks'
+        'has_one_associations_callbacks',
+        'has_and_belongs_to_many_associations_callbacks'
     );
 
     protected $after_create = array(
-        'has_one_associations_callbacks'
+        'has_one_associations_callbacks',
+        'has_and_belongs_to_many_associations_callbacks'
     );
 
     protected $association_cache = array();
@@ -115,6 +117,10 @@ abstract class Model extends Callbacks implements \SplSubject
         return $this->persistence->isNewRecord();
     }
 
+    public function isPersisted()
+    {
+        return $this->persistence->isPersisted();
+    }
     /**
      * Associations
      */
@@ -154,6 +160,13 @@ abstract class Model extends Callbacks implements \SplSubject
         }
     }
 
+    final protected function has_and_belongs_to_many_associations_callbacks()
+    {
+        foreach( $this->association_cache as $assoc ) {
+            if (   $assoc instanceof \Lycan\Record\Associations\HasAndBelongsToMany
+                && $assoc->needSave() ) $assoc->saveAssociation();
+        }
+    }
     /**
      * Finder methods
      */
