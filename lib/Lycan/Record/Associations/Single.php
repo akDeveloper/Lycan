@@ -7,15 +7,6 @@ namespace Lycan\Record\Associations;
 abstract class Single extends \Lycan\Record\Associations implements Interfaces\Single
 {
     /**
-     * When associate object is a new object and parent object calls save 
-     * method, forces association to call its save method 
-     * and set foreign key or join tables fields with appropriate values.
-     *
-     * @var boolean
-     */
-    protected $marked_for_save=false;
-
-    /**
      * Tries to execute missing methods 
      * from @see Lycan\Record\Association::result_set instance
      *
@@ -63,6 +54,23 @@ abstract class Single extends \Lycan\Record\Associations implements Interfaces\S
     public function isNull()
     {
         return null === $this->fetch() || $this->fetch() instanceof \Lycan\Record\Null;
+    }
+
+    public function build($attributes=array())
+    {
+        $class = $this->association;
+        $new = new $class($attributes);
+        $this->set($new);
+        return $new;
+    }
+
+    public function create($attributes=array())
+    {
+        $class = $this->association;
+        $new = new $class($attributes);
+        $new->save();
+        $this->set($new);
+        return $new;
     }
 
 }

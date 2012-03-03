@@ -49,7 +49,17 @@ abstract class Associations
 
     protected $foreign_key_value;
     protected $primary_key_value;
-
+  
+    /**
+     * When associate object is a new object and parent object calls save 
+     * method, forces association to call its save method 
+     * and set foreign key or join tables fields with appropriate values.
+     *
+     * @var boolean
+     */
+  
+    protected $marked_for_save=false;
+    
     /**
      * Handles model or collection objects from associations calls
      * 
@@ -154,23 +164,6 @@ abstract class Associations
         $this->model_instance = $model;
         $this->options = $options; 
         list($this->association, $this->foreign_key, $this->primary_key) = static::set_options($name, $this->model, $options);
-    }
-
-    public function build($attributes=array())
-    {
-        $class = $this->association;
-        $new = new $class($attributes);
-        $this->set($new);
-        return $new;
-    }
-
-    public function create($attributes=array())
-    {
-        $class = $this->association;
-        $new = new $class($attributes);
-        $new->save();
-        $this->set($new);
-        return $new;
     }
 
     public function needSave()

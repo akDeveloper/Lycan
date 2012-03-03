@@ -8,6 +8,8 @@ use Lycan\Support\Inflect;
 
 abstract class Collection extends \Lycan\Record\Associations implements Interfaces\Collection, \IteratorAggregate, \ArrayAccess
 {
+    protected $marked_for_save_objects=array();
+
     /**
      * Tries to execute missing methods 
      * from @see Lycan\Record\Association::result_set instance
@@ -72,6 +74,23 @@ abstract class Collection extends \Lycan\Record\Associations implements Interfac
     public function delete($object)
     {
         $this->delete_with_offset($object);
+    }
+
+    public function build($attributes=array())
+    {
+        $class = $this->association;
+        $new = new $class($attributes);
+        $this->add($new);
+        return $new;
+    }
+
+    public function create($attributes=array())
+    {
+        $class = $this->association;
+        $new = new $class($attributes);
+        $new->save();
+        $this->add($new);
+        return $new;
     }
 
     /**
