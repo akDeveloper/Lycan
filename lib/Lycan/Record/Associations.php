@@ -113,12 +113,14 @@ abstract class Associations
         $instance = $model;
         $model = get_class($model);
         $type = self::associationTypeFor($name, $model);
+        
+        if (false == $type) return false;
+
         return self::get_instance($type, $name, $instance, 
             isset($model::$$type[$name]) 
             ? $model::$$type[$name] 
             : array()
         );
-        return false;
     }
 
     protected static function set_options($name, $model, $options)
