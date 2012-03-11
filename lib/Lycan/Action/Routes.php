@@ -17,10 +17,18 @@ class Routes
         $block($map);
     }
 
-    public static function matchPath($path)
+    public static function urlFor($named_route, $params=array())
     {
+        if (array_key_exists($named_route, self::$routers)) {
+            return self::$routers[$named_route]->getUrlWith($params);
+        }
+        return null;
+    }
+
+    public static function matchPath($request)
+    { 
         foreach( self::$routers as $router ) {
-            if ( $router->match($path) ) return $router;
+            if ( $router->match($request) ) return $router;
         }
         return false;
     }

@@ -26,7 +26,7 @@ class Router
 
     public function __construct($name=null, $url=null, $controller=null, $action=null,  $namespace=null, $method='get', $format=null)
     {
-        $this->url          = $url;
+        $this->url          = isset($namespace) ? $namespace . "/" . $url : $url;
         $this->controller   = $controller;
         $this->action       = $action;
         $this->method       = $method;
@@ -63,6 +63,13 @@ class Router
         return $params ?: array();
     }
 
+    public function getUrlWith($params=array())
+    {
+        if (empty($params))
+            return $this->url;
+        return str_replace(array_keys($params), $params, $this->url); 
+    }
+
     public function name_space($name, $block)
     {
         $router = new Router(null, null, null, null, $name);
@@ -87,6 +94,10 @@ class Router
             throw new \InvalidArgumentException("url and or options must be set");
 
         $this->url = ( $this->namespace ? $this->namespace . "/" : null ) . $url;
+
+        $this->url = substr($this->url, -1, 1) == "/" 
+            ? substr($this->url, 0, -1) 
+            : $this->url;
 
         $this->controller = isset($options['controller']) ? $options['controller'] : null;
         $this->action     = isset($options['action']) ? $options['action'] : null;
@@ -149,8 +160,10 @@ class Router
         return array();
     }
 
-    public function match($path)
+    public function match($request)
     {
+        if ($this->method != $request->getMethod()) return false;
+        $path = $request->getPath();
         $regx_url = preg_replace("/:[a-z]+/","([^/]+)", $this->url);
         $regx_url =  str_replace('/','\/', $regx_url);
         $regx_url =  str_replace('.','\.', $regx_url);
@@ -169,56 +182,62 @@ class Router
 
     private static function _verb_to_router($verb, $name, $namespace=null)
     {
+        $singular = Inflect::singularize($name);
         switch ($verb) {
             case 'index':
                 $controller = $name;
                 $action     = 'index';
-                $url        = ($namespace ? "{$namspace}/" : null) . $name;
-                $name       = ($namespace ? "{$namspace}_" : null) . $name;
+                $url        = $name;
+                $name       = ($namespace ? "{$namespace}_" : null) . $name;
                 return new Router($name, $url, $controller, $action, $namespace);
                 break;
             case 'show':
                 $controller = $name;
                 $action     = 'show';
-                $url        = ($namespace ? "{$namspace}/" : null) . $name . "/:id";
-                $name       = ($namespace ? "{$namspace}_" : null) . "show_" . Inflect::singularize($name);
+                $url        = $name . "/:id";
+                $name       = ($namespace ? "{$namespace}_" : null) . "show_" . $singular;
                 return new Router($name, $url, $controller, $action, $namespace);
                 break;
             case 'add':
                 $controller = $name;
                 $action     = 'add';
-                $url        = ($namespace ? "{$namspace}/" : null) . $name . '/new';
-                $name       = ($namespace ? "{$namspace}_" : null) . "add_" . Inflect::singularize($name);
+                $url        = $name . '/new';
+                $name       = ($namespace ? "{$namespace}_" : null) . "add_" . $singular;
                 return new Router($name, $url, $controller, $action, $namespace);
                 break;
             case 'create': 
                 $controller = $name;
                 $action     = 'create';
-                $url        = ($namespace ? "{$namspace}/" : null) . $name ;
-                $name       = ($namespace ? "{$namspace}_" : null) . $name;
+                $url        = $name;
+                $name       = ($namespace ? "{$namespace}_" : null) . "create_" . $singular;
                 return new Router($name, $url, $controller, $action, $namespace, 'post');
                 break;
             case 'edit': 
                 $controller = $name;
                 $action     = 'edit';
-                $url        = ($namespace ? "$namspace/" : null) . $name . '/:id/edit';
-                $name       = ($namespace ? "$namspace_" : null) . "edit_" . $name;
+                $url        = $name . '/:id/edit';
+                $name       = ($namespace ? "{$namespace}_" : null) . "edit_" . $singular;
                 return new Router($name, $url, $controller, $action, $namespace);
                 break;
             case 'update': 
                 $controller = $name;
                 $action     = 'update';
-                $url        = ($namespace ? "$namspace/" : null) . $name . '/:id';
-                $name       = ($namespace ? "$namspace_" : null) . "update_" . $name;
+                $url        = $name . '/:id';
+                $name       = ($namespace ? "{$namespace}_" : null) . "update_" . $singular;
                 return new Router($name, $url, $controller, $action, $namespace, 'put');
                 break;   
             case 'destroy': 
                 $controller = $name;
                 $action     = 'destroy';
-                $url        = ($namespace ? "$namspace/" : null) . $name . '/:id';
-                $name       = ($namespace ? "$namspace_" : null) . 'destroy_' . $name;
+                $url        = $name . '/:id';
+                $name       = ($namespace ? "{$namespace}_" : null) . 'destroy_' . $singular;
                 return new Router($name, $url, $controller, $action, $namespace, 'delete');
                 break;
         }
+    }
+
+    public function __toString()
+    {
+        return $this->url;
     }
 }
