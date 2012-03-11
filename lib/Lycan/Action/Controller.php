@@ -36,7 +36,7 @@ class Controller
         $this->template = new View();
         $this->response = new Response();
         $filename = APP_PATH . "log" . DS . ENV . ".log";
-        $this->logger = new \Lycan\Record\Logger($filename);
+        $this->logger = new \Lycan\Support\Logger($filename);
     }
 
     public function dispatch()
@@ -44,7 +44,7 @@ class Controller
         if (method_exists($this, $this->action))
             $this->{$this->action}();
         else
-            throw new \BadMethodCallException("Action {$this->controller}->{$this->action}() not exists.");
+            throw new \BadMethodCallException("Action {$this->controller}::{$this->action}() not exists.");
 
         # Render View
         if ($this->action == false) {
@@ -76,7 +76,7 @@ class Controller
             self::$layouts_path = self::$views_path . 'layouts/';
             
             $request = new Request($url);
-            $router = Routes::matchPath($request->getPath());
+            $router = Routes::matchPath($request);
             
             if (false === $router)
                 throw new \Exception('Invalid request');
