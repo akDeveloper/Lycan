@@ -9,7 +9,7 @@ class Routes
 
     public static $routers = array();
     
-    public static $verbs = array( 'index', 'show', 'add', 'create', 'edit', 'update', 'destroy');
+    public static $verbs = array( 'index', 'add', 'create', 'edit', 'show', 'update', 'destroy');
     
     public static function draw($block)
     {

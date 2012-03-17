@@ -35,9 +35,21 @@ class Router
         $this->format       = $format;
     }
 
+    public function getNamespace()
+    {
+        return Inflect::camelize($this->namespace);
+    }
+
+    public function getUrl()
+    {
+        return $this->url;
+    }
+
     public function getController()
     {
-        return Inflect::camelize($this->controller);
+        return $this->namespace 
+            ? Inflect::camelize($this->namespace) . "\\" . Inflect::camelize($this->controller) . "Controller"
+            : Inflect::camelize($this->controller) . "Controller";
     }
 
     public function getAction()
@@ -66,8 +78,8 @@ class Router
     public function getUrlWith($params=array())
     {
         if (empty($params))
-            return $this->url;
-        return str_replace(array_keys($params), $params, $this->url); 
+            return "/" . $this->url;
+        return "/" . str_replace(array_keys($params), $params, $this->url); 
     }
 
     public function name_space($name, $block)
@@ -101,7 +113,7 @@ class Router
 
         $this->controller = isset($options['controller']) ? $options['controller'] : null;
         $this->action     = isset($options['action']) ? $options['action'] : null;
-        $this->method     = isset($options['method']) ? $options['method'] : null;
+        $this->method     = isset($options['method']) ? $options['method'] : 'get';
         $this->format     = isset($options['format']) ? $options['format'] : null;
         $this->name       = isset($options['name'])   ? $options['name']   : null;
 
@@ -191,13 +203,6 @@ class Router
                 $name       = ($namespace ? "{$namespace}_" : null) . $name;
                 return new Router($name, $url, $controller, $action, $namespace);
                 break;
-            case 'show':
-                $controller = $name;
-                $action     = 'show';
-                $url        = $name . "/:id";
-                $name       = ($namespace ? "{$namespace}_" : null) . "show_" . $singular;
-                return new Router($name, $url, $controller, $action, $namespace);
-                break;
             case 'add':
                 $controller = $name;
                 $action     = 'add';
@@ -217,6 +222,13 @@ class Router
                 $action     = 'edit';
                 $url        = $name . '/:id/edit';
                 $name       = ($namespace ? "{$namespace}_" : null) . "edit_" . $singular;
+                return new Router($name, $url, $controller, $action, $namespace);
+                break;
+            case 'show':
+                $controller = $name;
+                $action     = 'show';
+                $url        = $name . "/:id";
+                $name       = ($namespace ? "{$namespace}_" : null) . "show_" . $singular;
                 return new Router($name, $url, $controller, $action, $namespace);
                 break;
             case 'update': 
