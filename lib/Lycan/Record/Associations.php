@@ -67,34 +67,6 @@ abstract class Associations
      */
     protected $result_set;
 
-    protected static function get_instance($type, $name, $model, $options=array())
-    {
-        switch ($type) {
-            case 'belongsTo':
-                if ( isset($options['polymorphic']) )
-                    return new Associations\BelongsToPolymorphic($name, $model, $options);
-                return new Associations\BelongsTo($name, $model, $options);
-                break;
-            case 'hasMany':
-                if ( isset($options['through']) )
-                    return new Associations\HasManyThrough($name, $model, $options);
-                return new Associations\HasMany($name, $model, $options);
-                break;
-            case 'hasOne':
-                 if ( isset($options['through']) )
-                    return new Associations\HasOneThrough($name, $model, $options);
-                return new Associations\HasOne($name, $model, $options);               
-                break;
-            case 'hasAndBelongsToMany':
-                return new Associations\HasAndBelongsToMany(
-                    $name, 
-                    $model, 
-                    $options
-                );
-                break;
-        }
-    }
-
     public static function associationTypeFor($name, $model)
     {
         foreach (self::$associations as $assoc) {
@@ -102,7 +74,16 @@ abstract class Associations
             if (   in_array($name, $model::$$assoc) 
                 || array_key_exists($name, $model::$$assoc)
             ) {
-                return $assoc;
+                $o = $model::$$assoc;
+                $options = array_key_exists($name, $o) 
+                    ? $o[$name] : array();
+                if (!empty($options)) {
+                    if ('belongsTo' == $assoc && isset($options['polymorphic'])) return 'BelongsToPolymorphic';
+                    if ('hasMany' == $assoc && isset($options['through'])) return 'HasManyThrough';
+                    if ('hasOne' == $assoc && isset($options['through'])) return 'HasOneThrough';
+                    return Inflect::classify($assoc);
+                }
+                return Inflect::classify($assoc);
             }
         }
         return false;       
@@ -115,12 +96,13 @@ abstract class Associations
         $type = self::associationTypeFor($name, $model);
         
         if (false == $type) return false;
-
-        return self::get_instance($type, $name, $instance, 
+        
+        $association = "\\Lycan\\Record\\Associations\\" . $type;
+        
+        return new $association($name, $instance,
             isset($model::$$type[$name]) 
             ? $model::$$type[$name] 
-            : array()
-        );
+            : array());
     }
 
     protected static function set_options($name, $model, $options)

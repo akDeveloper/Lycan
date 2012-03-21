@@ -163,7 +163,7 @@ class MySql extends \Lycan\Record\Query
             $model = $this->class_name;
             foreach ($this->joins as $join) {
                 if ( $type = \Lycan\Record\Associations::associationTypeFor($join, $model)) {
-                    $association = "\\Lycan\\Record\\Associations\\".Inflect::classify($type);
+                    $association = "\\Lycan\\Record\\Associations\\".$type;
                     $association::joinQuery($this, $join, $model,
                         isset($model::$$type[$join]) 
                         ? $model::$$type[$join] 
@@ -208,7 +208,7 @@ class MySql extends \Lycan\Record\Query
     {
         $class_name = $this->class_name;
         $this->limit(1);
-        $this->order("{$class_name::$primary_key} DESC");
+        $this->orderBy("{$class_name::$primary_key} DESC");
         $this->fetch_method = 'one';
         return $this->_fetch_data();
     }
@@ -272,11 +272,11 @@ class MySql extends \Lycan\Record\Query
     {
         if ( is_array($include) && !is_numeric(key($include)) ) {
             // we have chain associations to include
-            foreach($include as $k=>$v){
-                // include the parent association first (indicated by $k). 
+            foreach($include as $parent=>$v){
+                // include the parent association first. 
                 // return the included collection as $c. $collection already 
                 // merged association records.
-                $c = $this->_includes($k, $collection, $model);
+                $c = $this->_includes($parent, $collection, $model);
                 // now if we have multiple includes, include them with parent 
                 // class classify($k) to $c collection
                 if ( is_array($v)) {
@@ -393,8 +393,8 @@ class MySql extends \Lycan\Record\Query
             $query .= " WHERE {$this->where}";
         if (isset($this->group))
             $query .= " GROUP BY {$this->group}";
-        if (isset($this->order))
-            $query .= " ORDER BY {$this->order}";
+        if (isset($this->order_by))
+            $query .= " ORDER BY {$this->order_by}";
         if (isset($this->having))
             $query .= " HAVING {$this->having}";
         if (isset($this->limit))
