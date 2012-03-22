@@ -19,7 +19,7 @@ interface Persistence
     
     public function touch($attribute);
 
-    public function save();
+    public function save($validate=true);
 
     public function updateAttribute($name, $value);
 
@@ -34,8 +34,4 @@ interface Persistence
     public function delete();
         
     public function destroy();
-    
-    public function update($attribute_names=null);
-    
-    public function create();
 }

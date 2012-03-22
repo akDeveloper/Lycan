@@ -6,22 +6,8 @@ namespace Lycan\Record;
 
 require_once __DIR__ . DS . 'Exceptions.php';
 
-abstract class Model extends Callbacks implements \SplSubject
+abstract class Model implements \SplSubject, Interfaces\Persistence
 {
-    /**
-     * Database adapter
-     *
-     * @var \LycanRecord\Adapter
-     * @access public
-     */
-    protected static $adapter;
-
-    public static $columns = array();
-
-    public static $table;
-
-    public static $primary_key;
- 
     public static $belongsTo = array();
     
     public static $hasMany = array();
@@ -36,22 +22,43 @@ abstract class Model extends Callbacks implements \SplSubject
 
     private $_observers = array();
 
-    protected $persistence;
+    /**
+     * Persistence implementation attributes
+     */
 
-    protected $before_save = array(
+    /**
+     * Data adapter
+     *
+     * @var \LycanRecord\Adapter
+     * @access public
+     */
+    protected static $adapter;
+    public static $columns = array();
+    public static $table;
+    public static $primary_key;
+    protected $new_record=true;
+    protected $destroyed=false;
+    protected $readonly=false;
+    public $attributes=array();
+    #protected $persistence;
+
+    /**
+     * Callback methods
+     */
+    public $before_save = array(
         'belongs_to_associations_callbacks'
     );
 
-    protected $before_create = array(
+    public $before_create = array(
         'belongs_to_associations_callbacks'
     );
 
-    protected $after_save = array(
+    public $after_save = array(
         'has_one_associations_callbacks',
         'has_and_belongs_to_many_associations_callbacks'
     );
 
-    protected $after_create = array(
+    public $after_create = array(
         'has_one_associations_callbacks',
         'has_and_belongs_to_many_associations_callbacks'
     );
@@ -60,13 +67,22 @@ abstract class Model extends Callbacks implements \SplSubject
     
     final function __construct($attributes=array(), $options=array()) 
     {
-        $this->persistence = new Persistence(get_called_class(),$attributes, $options);
+        #$this->persistence = new Persistence(get_called_class(),$attributes, $options);
+        $this->_create_persistence($attributes, $options);
         
         if ( !empty($this->observers) )
             foreach( $this->observers as $observer )
                 $this->attach(new $observer());
+    }
 
-        $this->reflection_properties();
+    private function _create_persistence($attributes=array(), $options=array())
+    {
+        $this->new_record = isset($options['new_record']) ? $options['new_record'] : true;
+        $options['new_record'] = $this->new_record;
+        $this->attributes = new Attributes(static::$columns, get_class($this), $options);
+
+        if ($attributes)
+            $this->attributes->assign($attributes, array('new_record'=>$this->new_record));       
     }
 
     public static function initWith($attributes, $options=array())
@@ -91,7 +107,8 @@ abstract class Model extends Callbacks implements \SplSubject
         if ( $assoc = $this->_association_for($attribute) )
             return $assoc;
 
-        return $this->persistence->attributes->get($attribute);
+        #return $this->persistence->attributes->get($attribute);
+        return $this->attributes->get($attribute);
 
         throw new InvalidPropertyException(get_class($this), $attribute);
     }
@@ -99,7 +116,7 @@ abstract class Model extends Callbacks implements \SplSubject
     public function __set($attribute, $value)
     {
         if (in_array($attribute, static::$columns))
-            $this->persistence->attributes->set($attribute, $value);
+            $this->attributes->set($attribute, $value); #$this->persistence->attributes->set($attribute, $value);
         elseif ( $assoc = $this->_association_for($attribute) )
             return $assoc->set($value);
         else
@@ -112,15 +129,6 @@ abstract class Model extends Callbacks implements \SplSubject
             return $assoc;
     }
 
-    public function isNewRecord()
-    {
-        return $this->persistence->isNewRecord();
-    }
-
-    public function isPersisted()
-    {
-        return $this->persistence->isPersisted();
-    }
     /**
      * Associations
      */
@@ -206,11 +214,158 @@ abstract class Model extends Callbacks implements \SplSubject
 
     private static function _options_for_finder($options)
     {
-        if ( isset($options['readonly']) ) $this->readony = $options['readonly'];
+        if ( isset($options['readonly']) ) $this->readonly = $options['readonly'];
 
         return $options;
     }
+    
+    /**
+     * Persistence implementation
+     */
+    public function isNewRecord()
+    {
+        return $this->new_record;
+    }
 
+    public function isPersisted()
+    {
+        return !($this->isNewRecord() || $this->isDestroyed()); 
+    }
+
+    public function isDestroyed()
+    {
+        return $this->destroyed;
+    }
+
+
+    public function isDirty()
+    {
+        return $this->attributes->isDirty();
+    }
+
+    public function reload()
+    {
+        $this->attributes->reload();
+        if ($this->id() && $this->new_record) $this->new_record=false;
+    }
+
+    public function toggle($attribute) 
+    {
+    
+    }
+
+    public function touch($attribute)
+    {
+
+    }
+
+    public function updateAttribute($name, $value)
+    {
+    
+    }
+
+    public function updateAttributes($attributes, $options=array())
+    {
+    
+    }
+    
+    public function updateColumn($name, $value)
+    {
+    
+    }
+
+    public function decrement($attribute, $by=1)
+    {
+    
+    }
+
+    public function increment($attribute, $by=1) 
+    {
+    
+    }
+
+    public function delete()
+    {
+    
+    }
+
+    public function destroy()
+    {
+        $this->destroyed = true;
+    }
+
+    protected function id()
+    {
+        return $this->attributes[static::$primary_key];
+    }
+
+    protected function setId($id)
+    {
+        $this->attributes[static::$primary_key] = $id;
+    }
+
+    protected function validation()
+    {
+        return true;    
+    }
+
+    public function save($validate=true)
+    {
+        $v = $validate ? $this->validation() : true;
+        return $v && $this->create_or_update();
+    }
+
+    protected function create_or_update()
+    {
+        $result = $this->new_record ? $this->_create() : $this->_update();
+        return $result != false;
+    }
+
+    private function _update()
+    {
+        $static = get_class($this);
+        $attributes = $this->attributes;
+        $id = $this->id();
+
+        return Callbacks::run_callbacks('update', $this, function() use ($static, $attributes, $id){
+            
+            $attribute_names = $attributes->keys();
+            $attributes_with_values =  $attributes->attributesValues(false, false, $attribute_names);
+            
+            if ( empty($attributes_with_values) ) return 1;
+            
+            $query = $static::find()->where(array($static::$primary_key => $id))->compileUpdate($attributes_with_values);
+            $res = $static::getAdapter()->query($query);
+            $attributes->reload();
+
+            return $res; 
+        });
+
+    }
+
+    private function _create()
+    {
+        $static = get_class($this);
+        $attributes = $this->attributes;
+        $id = $this->id();
+        $t = $this;
+
+        return Callbacks::run_callbacks('create', $this, function() use ($static, $attributes, $id, $t){
+            
+            $attributes_with_values =  $attributes->attributesValues(!is_null($id));
+            $query  = $static::getAdapter()->getQuery($static)->compileInsert($attributes_with_values);
+            $new_id = $static::getAdapter()->insert($query);
+            
+            if ($static::$primary_key) {
+                if (!isset($attributes[$static::$primary_key]))
+                    $attributes[$static::$primary_key] = $new_id;
+            }
+            $t->reload(); 
+
+            return $new_id;
+        });
+        var_dump($this->id());
+    }
 
     /**
      * SplSubject implementation

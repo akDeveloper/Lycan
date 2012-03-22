@@ -66,7 +66,7 @@ class Attributes implements \Iterator, \ArrayAccess, \Serializable, \Countable
     public function set($key, $value)
     {
         if ( null == $key) return;
-
+        
         if (isset( $this->_old_values[$key]) 
             && $this->_old_values[$key] == $value) // Maybe === operator 
         {
@@ -75,7 +75,13 @@ class Attributes implements \Iterator, \ArrayAccess, \Serializable, \Countable
         } elseif( array_key_exists($key, $this->_storage) && $this->_storage[$key] !== $value ) {
             $this->_old_values[$key] = $this->_storage[$key];
             $this->_storage[$key] = $value;
-        } 
+        }
+    }
+
+
+    public function isDirty()
+    {
+        return !empty($this->_old_values);
     }
 
     public function attributesValues($include_primary_key=true, $include_readonly_attributes=true, $attribute_names=null)

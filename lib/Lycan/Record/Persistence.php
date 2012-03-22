@@ -113,11 +113,11 @@ class Persistence implements Interfaces\Persistence
 
     protected function create_or_update()
     {
-        $result = $this->new_record ? $this->create() : $this->update();
+        $result = $this->new_record ? $this->_create() : $this->_update();
         return $result != false;
     }
 
-    public function update($attribute_names=null)
+    private function _update($attribute_names=null)
     {
         $class = $this->class;
         if ( null === $attribute_names ) $attribute_names = $this->attributes->keys();
@@ -130,7 +130,7 @@ class Persistence implements Interfaces\Persistence
         return $res;
     }
 
-    public function create()
+    private function _create()
     {
         $class = $this->class;
         $attributes_with_values =  $this->attributes->attributesValues(!is_null($this->id()));

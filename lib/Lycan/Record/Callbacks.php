@@ -4,47 +4,74 @@
 
 namespace Lycan\Record;
 
-abstract class Callbacks extends \Lycan\Support\Callbacks implements \Lycan\Support\Interfaces\Callbacks
+class Callbacks implements Interfaces\Callbacks
 {
+    private static $_reflection_properties=array();
 
-    public function run_callbacks($kind, $args=null)
-    {
-        $res = $this->perform_callback_for($kind, 'before');
-        $res = $res !== false ? $this->persistence->$kind($args) : false;
-        return $res !== false ? $this->perform_callback_for($kind, 'after') : false;
-    }
-
-    public function destroy()
-    {
+    public static $CALLBACKS = array(
+        'after_initialize', 'after_find', 'after_touch', 'before_validation', 'after_validation',
+        'before_save', 'around_save', 'after_save', 'before_create', 'around_create',
+        'after_create', 'before_update', 'around_update', 'after_update',
+        'before_destroy', 'around_destroy', 'after_destroy', 'after_commit', 'after_rollback'       
+    );
     
+    protected static function reflection_properties($model)
+    {
+        $ref = new \ReflectionClass('\Lycan\Record\Model');
+        $def_prop = $ref->getDefaultProperties();
+
+        foreach( self::$CALLBACKS as $callback ) {
+            if (array_key_exists($callback, $def_prop)) {
+                if ( !isset(self::$_reflection_properties[$callback]) ) self::$_reflection_properties[$callback] = array();
+
+                self::$_reflection_properties[$callback] = array_merge(self::$_reflection_properties[$callback], $def_prop[$callback]);
+
+                if ( isset($model->$callback) && $model->$callback != $def_prop[$callback])
+                    self::$_reflection_properties[$callback] = array_merge(self::$_reflection_properties[$callback], $model->$callback);
+            }
+        }
+        #return self::$_reflection_properties;
     }
 
-    public function touch($options=array())
+    protected static function perform_callback_for($kind, $chain, $model)
     {
-    
-    }
+        $obs = $norm = true;
+        $callback_methods = array("{$chain}_{$kind}");
+        if ($kind == 'update') {
+            $callback_methods[] = "{$chain}_save";
+        } elseif ($kind == 'create') {
+            $callback_methods[] = "{$chain}_create";
+            $callback_methods[] = "{$chain}_save";
+        } else {
+            $callback_methods[] = "{$chain}_{$kind}";
+        }
+        foreach( $callback_methods as $callback ) {
+            if (!in_array($callback, self::$CALLBACKS)) continue;
+            
+            //Call model callback method
+            if ( array_key_exists($callback, self::$_reflection_properties)) {
+                foreach (self::$_reflection_properties[$callback] as $method) {
+                    $norm = $model->$method();
+                    if ( false === $norm ) break;
+                }
+            }
+            
+            //Call observer callbacks if exist
+            if ( $model instanceof \SplSubject )
+                $obs = $model->notifySubject($callback);
+            if ( $obs !==false && $norm !== false ) 
+                continue;
+            else
+                return false;
+        }
+        return true;
+    }  
 
-    public function save($options=array())
+    public static function run_callbacks($kind, $model, $block=null)
     {
-        return $this->create_or_update($options);
-    }
-
-    protected function create_or_update($options=array())
-    {
-        if ( !($this->persistence instanceof \Lycan\Record\Interfaces\Persistence) )
-            throw new \LogicException( get_class($this) . "::persistence property must implements \Lycan\Record\Interfaces\Persistence interface");
-        
-        $result = $this->persistence->isNewRecord() ? $this->create() : $this->update();
-        return $result != false;# ? $this->run_callbacks('save', $options) : false;
-    }
-
-    private function create()
-    {
-        return $this->run_callbacks('create');
-    }
-
-    public function update($options=null)
-    {
-        return $this->run_callbacks('update', $options);
+        self::reflection_properties($model);
+        $res = self::perform_callback_for($kind, 'before', $model);
+        $res = $res !== false ? $block() : false;
+        return $res !== false ? self::perform_callback_for($kind, 'after', $model) : false;
     }
 } 
