@@ -19,32 +19,32 @@ class Callbacks implements Interfaces\Callbacks
     {
         $ref = new \ReflectionClass('\Lycan\Record\Model');
         $def_prop = $ref->getDefaultProperties();
-
+        
         foreach( self::$CALLBACKS as $callback ) {
             if (array_key_exists($callback, $def_prop)) {
                 if ( !isset(self::$_reflection_properties[$callback]) ) self::$_reflection_properties[$callback] = array();
 
                 self::$_reflection_properties[$callback] = array_merge(self::$_reflection_properties[$callback], $def_prop[$callback]);
-
+                
                 if ( isset($model->$callback) && $model->$callback != $def_prop[$callback])
                     self::$_reflection_properties[$callback] = array_merge(self::$_reflection_properties[$callback], $model->$callback);
+            } else {
+                if ( isset($model->$callback) && !empty($model->$callback)) {
+                    if ( !isset(self::$_reflection_properties[$callback]) ) self::$_reflection_properties[$callback] = array();
+                    self::$_reflection_properties[$callback] = array_merge(self::$_reflection_properties[$callback], $model->$callback);
+                }
             }
         }
-        #return self::$_reflection_properties;
     }
 
     protected static function perform_callback_for($kind, $chain, $model)
     {
         $obs = $norm = true;
         $callback_methods = array("{$chain}_{$kind}");
-        if ($kind == 'update') {
+        if ($kind == 'update' || $kind == 'create') {
             $callback_methods[] = "{$chain}_save";
-        } elseif ($kind == 'create') {
-            $callback_methods[] = "{$chain}_create";
-            $callback_methods[] = "{$chain}_save";
-        } else {
-            $callback_methods[] = "{$chain}_{$kind}";
         }
+        
         foreach( $callback_methods as $callback ) {
             if (!in_array($callback, self::$CALLBACKS)) continue;
             
