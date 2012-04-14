@@ -18,9 +18,6 @@ class Request
     private $_protocol;
     private $_response_status = "200 OK";
     private $_document_format;
-    private $_controller;
-    private $_action;
-    private $_namespace;
     private $_routes;
     private $_session;
 
@@ -61,16 +58,6 @@ class Request
         return $this->_path;
     }
 
-    public function getController()
-    {
-        return $this->_controller;
-    }
-
-    public function getAction()
-    {
-        return $this->_action;
-    }
-
     public function getMethod()
     {
         return $this->_method;
@@ -84,11 +71,6 @@ class Request
     public function getFormat()
     {
         return $this->_document_format;
-    }
-
-    public function getNamespace()
-    {
-        return $this->_namespace;
     }
 
     public function isXHttpRequest()

@@ -27,14 +27,16 @@ class Controller
 
     public function __construct(Request $request, Router $router)
     {
-        $this->session = $request->getSession();
-        $this->controller = get_class($this);
-        $this->action = $router->getAction();
-        $this->params = array_merge($router->getParams(), $request->getParams());
+        $this->session          = $request->getSession();
+        $this->controller       = get_class($this);
+        $this->action           = $router->getAction();
+        $this->params           = array_merge($router->getParams(), $request->getParams());
         $this->action_view_path = self::$views_path . $this->controller . DS . $this->action . ".phtml"; 
-        $this->layout_path = self::$layouts_path . $this->layout . ".phtml"; 
-        $this->template = new View();
-        $this->response = new Response();
+        $this->layout_path      = self::$layouts_path . $this->layout . ".phtml"; 
+        $this->template         = new View();
+        $this->response         = new Response();
+
+        // Setup logger
         $filename = APP_PATH . "log" . DS . ENV . ".log";
         $this->logger = new \Lycan\Support\Logger($filename);
     }
@@ -82,7 +84,6 @@ class Controller
                 throw new \Exception('Invalid request');
 
             $controller = $router->getController();
-            $action     = $router->getAction();
             $controller = new $controller($request, $router);
             $controller->dispatch();
              
