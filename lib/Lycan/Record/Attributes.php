@@ -59,7 +59,7 @@ class Attributes implements \Iterator, \ArrayAccess, \Serializable, \Countable
     {
         if (array_key_exists($key, $this->_storage))
             return $this[$key];
-        throw new \Exception("Undefined index: {$this->_class_name}::{$key}");
+        return null;
     }
 
 
