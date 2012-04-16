@@ -17,7 +17,7 @@ class Callbacks implements Interfaces\Callbacks
     
     protected static function reflection_properties($model)
     {
-		self::$_reflection_properties = array();
+        self::$_reflection_properties = array();
         $ref = new \ReflectionClass('\Lycan\Record\Model');
         $def_prop = $ref->getDefaultProperties();
         
