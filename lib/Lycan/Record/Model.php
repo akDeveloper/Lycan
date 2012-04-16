@@ -6,7 +6,7 @@ namespace Lycan\Record;
 
 require_once __DIR__ . DS . 'Exceptions.php';
 
-abstract class Model implements \SplSubject, Interfaces\Persistence
+abstract class Model extends \Lycan\Validations\Validate implements \SplSubject, Interfaces\Persistence
 {
     public static $belongsTo = array();
     
@@ -17,6 +17,8 @@ abstract class Model implements \SplSubject, Interfaces\Persistence
     public static $hasAndBelongsToMany = array();
     
     public static $composed_of = array();
+
+    private $_errors;
 
     protected $observers = array();
 
@@ -40,7 +42,6 @@ abstract class Model implements \SplSubject, Interfaces\Persistence
     protected $destroyed=false;
     protected $readonly=false;
     public $attributes=array();
-    #protected $persistence;
 
     /**
      * Callback methods
@@ -67,7 +68,6 @@ abstract class Model implements \SplSubject, Interfaces\Persistence
     
     final function __construct($attributes=array(), $options=array()) 
     {
-        #$this->persistence = new Persistence(get_called_class(),$attributes, $options);
         $this->_create_persistence($attributes, $options);
         
         if ( !empty($this->observers) )
@@ -92,12 +92,11 @@ abstract class Model implements \SplSubject, Interfaces\Persistence
     }
 
     /**
-     * Persistence attributes can be accessed from Model class. Also 
-     * association names can be called via magic methods.
+     * Association names can be called via magic methods as attributes.
      *
      * @params string $attribute
      *
-     * @return mixed persistence attribute or association instance
+     * @return mixed attribute or association instance
      * @throws \Lycan\Record\InvalidPropertyException
      *
      * @access public
@@ -107,7 +106,6 @@ abstract class Model implements \SplSubject, Interfaces\Persistence
         if ( $assoc = $this->_association_for($attribute) )
             return $assoc;
 
-        #return $this->persistence->attributes->get($attribute);
         return $this->attributes->get($attribute);
 
         throw new InvalidPropertyException(get_class($this), $attribute);
@@ -116,11 +114,19 @@ abstract class Model implements \SplSubject, Interfaces\Persistence
     public function __set($attribute, $value)
     {
         if (in_array($attribute, static::$columns))
-            $this->attributes->set($attribute, $value); #$this->persistence->attributes->set($attribute, $value);
+            $this->attributes->set($attribute, $value);
         elseif ( $assoc = $this->_association_for($attribute) )
             return $assoc->set($value);
         else
             throw new InvalidPropertyException(get_class($this), $attribute);
+    }
+
+    public function __isset($attribute)
+    {
+         if ( $assoc = $this->_association_for($attribute) )
+            return true;
+
+        return null != $this->attributes->get($attribute);
     }
 
     public function __call($name, $args)
@@ -154,21 +160,21 @@ abstract class Model implements \SplSubject, Interfaces\Persistence
         return isset($this->association_cache[$name]) ? $this->association_cache[$name] : null;
     }
 
-    final protected function belongs_to_associations_callbacks()
+    final public function belongs_to_associations_callbacks()
     {
         foreach( $this->association_cache as $assoc ) {
             if ( ($assoc instanceof \Lycan\Record\Associations\BelongsTo) && $assoc->needSave() ) $assoc->saveAssociation();
         }
     }
 
-    final protected function has_one_associations_callbacks()
+    final public function has_one_associations_callbacks()
     {
         foreach( $this->association_cache as $assoc ) {
             if ( ($assoc instanceof \Lycan\Record\Associations\HasOne) && $assoc->needSave() ) $assoc->saveAssociation();
         }
     }
 
-    final protected function has_and_belongs_to_many_associations_callbacks()
+    final public function has_and_belongs_to_many_associations_callbacks()
     {
         foreach( $this->association_cache as $assoc ) {
             if (   $assoc instanceof \Lycan\Record\Associations\HasAndBelongsToMany
@@ -304,14 +310,9 @@ abstract class Model implements \SplSubject, Interfaces\Persistence
         $this->attributes[static::$primary_key] = $id;
     }
 
-    protected function validation()
-    {
-        return true;    
-    }
-
     public function save($validate=true)
     {
-        $v = $validate ? $this->validation() : true;
+        $v = $validate ? $this->run_validations() : true;
         return $v && $this->create_or_update();
     }
 
@@ -364,9 +365,32 @@ abstract class Model implements \SplSubject, Interfaces\Persistence
 
             return $new_id;
         });
-        var_dump($this->id());
     }
 
+    /**
+     * Validation Implementation
+     */
+    
+    /**
+     * Overload this method to model, and write validation conditions.
+     */
+    protected function validations()
+    {
+
+    }
+
+    protected function run_validations()
+    {
+        $method = new \ReflectionMethod($this,'validations');
+        $method->setAccessible(true);
+        $t = $this;
+
+        return Callbacks::run_callbacks('validation', $this, function() use ($t, $method){
+            $method->invoke($t);
+            return $t->errors()->count() == 0;
+        });
+        return true;    
+    }
     /**
      * SplSubject implementation
      */
@@ -409,4 +433,8 @@ abstract class Model implements \SplSubject, Interfaces\Persistence
             : static::$adapter["Lycan\\Record\\Model"];
     }
 
+    public function __toString()
+    {
+        return get_class($this). "@" .spl_object_hash($this) ;
+    }
 }
