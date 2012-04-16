@@ -41,7 +41,7 @@ abstract class Collection extends \Lycan\Record\Associations implements Interfac
         return $this->all()->isEmpty();
     }
 
-    public function size()
+    public function count()
     {
         return $this->all()->count(); 
     }
