@@ -415,12 +415,14 @@ abstract class Model extends \Lycan\Validations\Validate implements \SplSubject,
         }
     }
 
-    public static function establishConnection($type, $options)
+    public static function establishConnection($options)
     {
-        if (null === $type || empty($options))
-            throw new \InvalidArgumentException('You should define an adapter type and $options for setup.');
+        $adapter_type = isset($options['adapter']) ? $options['adapter'] : null;
 
-        $adapter = "\\Lycan\\Record\\Adapter\\$type";
+        if (null === $adapter_type || empty($options))
+            throw new \InvalidArgumentException('You should define an adapter type and $options for setup.');
+        
+        $adapter = "\\Lycan\\Record\\Adapter\\$adapter_type";
         $class = get_called_class();
         static::$adapter[$class] = new $adapter($options);
     }
@@ -436,5 +438,10 @@ abstract class Model extends \Lycan\Validations\Validate implements \SplSubject,
     public function __toString()
     {
         return get_class($this). "@" .spl_object_hash($this) ;
+    }
+
+    public function getAttributes()
+    {
+        return $this->attributes->toArray();
     }
 }

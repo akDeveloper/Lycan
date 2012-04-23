@@ -116,6 +116,11 @@ class Attributes implements \Iterator, \ArrayAccess, \Serializable, \Countable
         return array_keys($this->_storage);
     }
 
+    public function toArray()
+    {
+        return $this->_storage;
+    }
+
     // SPL - Countable functions
     // ----------------------------------------------
 
