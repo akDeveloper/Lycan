@@ -20,7 +20,7 @@ class Logger extends \SplFileObject
 
     private static $memory;
 
-    private static $logger_instance;
+    protected static $logger_instance;
 
     public static function startLogging()
     {
