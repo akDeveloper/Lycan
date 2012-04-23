@@ -92,6 +92,17 @@ abstract class Query
     
     abstract public function fetch();
 
+    /**
+     * Escapes a string to perform a safe sql query
+     *
+     * @param string $string the string to escape
+     * @access public
+     * @abstract
+     *
+     * @return string the escaped string
+     */
+    abstract public function escapeString($string);
+
     public function __toString()
     {
         return $this->query;

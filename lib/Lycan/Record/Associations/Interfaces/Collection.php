@@ -27,7 +27,7 @@ interface Collection
 
     public function isEmpty();
 
-    public function size();
+    public function count();
 
     public function exists();
 }

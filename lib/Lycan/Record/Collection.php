@@ -8,10 +8,14 @@ class Collection implements \Iterator, \Countable, \ArrayAccess
 {
 
     protected $results = array();
+    protected $model;
 
-    public function __construct($results = array())
+    protected $caching=array();
+
+    public function __construct($results = array(), $model=null)
     {
         $this->results = $results;
+        $this->model = $model;
     }
 
     /**
@@ -19,8 +23,9 @@ class Collection implements \Iterator, \Countable, \ArrayAccess
      */
     public function first()
     {
-        if (!empty($this->results))
-            return reset($this->results);
+        if (!empty($this->results)) {
+            return $this->_get_item(reset($this->results),key($this->results));
+        }
 
         return null;
     }
@@ -30,8 +35,9 @@ class Collection implements \Iterator, \Countable, \ArrayAccess
      */
     public function last()
     {
-        if (!empty($this->results))
-            return end($this->results);
+        if (!empty($this->results)) {
+            return $this->_get_item(end($this->results), key($this->results));
+        }
 
         return null;
     }
@@ -49,14 +55,14 @@ class Collection implements \Iterator, \Countable, \ArrayAccess
     public function each_with_index(\Closure $block) 
     {
         foreach ($this->results as $key => $value) {
-            $block($key, $value);
+            $block($key, $this->_get_item($value, $key));
         }
     }
 
     public function each(\Closure $block)
     {
-        foreach ($this->results as $value) {
-            $block($value);
+        foreach ($this->results as $key => $value) {
+            $block($this->_get_item($value, $key));
         }
     }
 
@@ -78,15 +84,15 @@ class Collection implements \Iterator, \Countable, \ArrayAccess
         } elseif (null !== $keyColumn && null === $valueColumn) {
             $return = array();
             foreach ($this->results as $k=>$row) {
-                if (($row->$keyColumn))
-                    $return[$k] = $row->$keyColumn;
+                if (array_key_exists($keyColumn, $row))
+                    $return[$k] = $row[$keyColumn];
             }
 
-            // Both key and valid columns filled in
+            // Both key and value columns filled in
         } else {
             $return = array();
             foreach ($this->results as $row) {
-                $return[$row->$keyColumn] = $row->$valueColumn;
+                $return[$row[$keyColumn]] = $row[$valueColumn];
             }
         }
 
@@ -98,7 +104,7 @@ class Collection implements \Iterator, \Countable, \ArrayAccess
         $return = array();
         
         $return = array_filter($this->results, function($row) use ($search_value, $field_value){
-            return $search_value == $row->$field_value;
+            return $search_value == $row[$field_value];
         });
         
         return new self(array_values($return));
@@ -108,16 +114,16 @@ class Collection implements \Iterator, \Countable, \ArrayAccess
     {
         $return = array(null);
         $return = array_filter($this->results, function($row) use ($search_value, $field_value){
-            return $search_value == $row->$field_value;
+            return $search_value == $row[$field_value];
         });
-        return current($return);
+        return $this->_get_item(current($return),key($return));
     }
 
     public function delete($search_value, $field_value)
     {
         $array = array();
         $array = array_filter($this->results, function($row) use ($search_value, $field_value){
-            return $search_value == $row->$field_value;
+            return $search_value == $row[$field_value];
         });
         if (!empty($array)) {
             $key = key($array);
@@ -146,7 +152,7 @@ class Collection implements \Iterator, \Countable, \ArrayAccess
     // ----------------------------------------------
     public function current()
     {
-        return current($this->results);
+        return $this->_get_item(current($this->results), key($this->results));
     }
 
     public function key()
@@ -179,22 +185,33 @@ class Collection implements \Iterator, \Countable, \ArrayAccess
 
     public function offsetGet($key)
     {
-        return $this->results[$key];
+        return $this->_get_item($this->results[$key], $key);
     }
 
     public function offsetSet($key, $value)
     {
         if ($key === null) {
-            return $this->results[] = $value;
+            return $this->results[] = $value->getAttributes();
         } else {
-            return $this->results[$key] = $value;
+            $this->caching[$key] = $value;
+            return $this->results[$key] = $value->getAttributes();
         }
     }
 
     public function offsetUnset($key)
     {
         unset($this->results[$key]);
+        unset($this->caching[$key]);
     }
 
     // ----------------------------------------------
+    
+    private function _get_item($item, $key=null) 
+    {
+        if (array_key_exists($key, $this->caching))
+            return $this->caching[$key];
+        $model = $this->model;
+        $this->caching[$key] = $model::initWith($item);
+        return $this->caching[$key];
+    }
 }

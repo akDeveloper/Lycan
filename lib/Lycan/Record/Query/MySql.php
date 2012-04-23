@@ -50,7 +50,7 @@ class MySql extends \Lycan\Record\Query
             {
                 $condition = " ( " . array_shift($conditions) . " ) ";
                 foreach ($conditions as $value) {
-                    $value = $this->adapter()->escapeString($value);
+                    $value = $this->escapeString($value);
                     $condition = preg_replace('|\?|', $value, $condition, 1);
                 }
             }  else {
@@ -70,7 +70,7 @@ class MySql extends \Lycan\Record\Query
                     if (is_array($value)) {
                         $w[] = $f . ' IN ( ' . join(", ", $value) . ' )';
                     } else {
-                        $w[] = $f . ' = ' . $this->adapter()->escapeString($value);
+                        $w[] = $f . ' = ' . $this->escapeString($value);
                     }
                 }
                 $condition = $condition . join(" AND ", $w) . " ) ";
@@ -249,7 +249,7 @@ class MySql extends \Lycan\Record\Query
         if (null === $value || "" === $value) {
             return "NULL";
         } elseif (!is_numeric($value)){
-            return $this->quote($this->adapter()->escapeString($value));
+            return $this->quote($this->escapeString($value));
         } else {
             return $value;
         }
@@ -261,7 +261,7 @@ class MySql extends \Lycan\Record\Query
         foreach ($attributes as $name=>$value) {
             $data = $this->apostrophe($name) . " = ?";
             $types .= is_float($value) ? 'd' : (is_int($value) ? 'i' : 's');
-            $binds[] = $this->quote($this->adapter()->escapeString($value));
+            $binds[] = $this->quote($this->escapeString($value));
         }
         $this->bind_params = array_merge(array($types), $binds);
         $this->query = "UPDATE {$this->table()} SET {$data} WHERE {$this->where}";
@@ -317,7 +317,7 @@ class MySql extends \Lycan\Record\Query
         
         $records = $this->adapter()->query($this);
 
-        $collection = new \Lycan\Record\Collection($records);
+        $collection = new \Lycan\Record\Collection($records, $model);
         
         if ( !$collection->isEmpty() && !empty($this->includes) ) {
             // include extra queries for fetching associations
@@ -401,6 +401,20 @@ class MySql extends \Lycan\Record\Query
             $query .= " LIMIT {$this->offset},{$this->limit}";
         $this->query = $query;
         return $this->query;
+    }
+
+    /**
+     * Escapes a string to perform a safe sql query
+     *
+     * @param string $string the string to escape
+     * @access public
+     * @abstract
+     *
+     * @return string the escaped string
+     */
+    public function escapeString($string)
+    {
+        return $this->adapter()->getConnection()->real_escape_string($string);
     }
 
     public function __toString()

@@ -4,6 +4,8 @@
 
 namespace Lycan\Record\Adapter;
 
+use \Lycan\Record\Logger;
+    
 class Mysql extends \Lycan\Record\Adapter
 {
     /**
@@ -23,19 +25,19 @@ class Mysql extends \Lycan\Record\Adapter
         $this->database       = $options['database'];
         $this->charset        = $options['charset'];
         
-        $this->logger = new \Lycan\Record\Logger();
+        $this->logger = new Logger();
     }
 
     /**
-     * Establish a connection to database and retyrn its instance
+     * Establish a connection to database and return its instance
      *
-     * @access protected
+     * @access public
      *
      * @return object \mysqli instance object
      */
-    protected function connection()
+    public function connect()
     {
-        if ( null === $this->connection || null === $this->logger) {
+        if (null === $this->connection) {
             $this->connection = new \mysqli($this->host, $this->user, $this->password, $this->database, $this->port);
             if ( $this->charset ) $this->connection->set_charset($this->charset);
             $this->logger->connectionLog(" Connected to " . $this->database . " FROM " . __CLASS__);
@@ -43,30 +45,25 @@ class Mysql extends \Lycan\Record\Adapter
         return $this->connection;
     }
 
+    public function getConnection()
+    {
+        return $this->connection ?: $this->connect();
+    }
+
+    public function disconnect()
+    {
+        return $this->connection = null;
+    }
 
     public function getQuery($class_name=null, $options = array())
     {
         return new \Lycan\Record\Query\MySql($class_name, $options);
     }
 
-    /**
-     * Escapes a string to performa a safe sql query
-     *
-     * @param string $string the string to escape
-     * @access public
-     * @abstract
-     *
-     * @return string the escaped string
-     */
-    public function escapeString($string)
-    {
-        return $this->connection()->real_escape_string($string);
-    }
-
     public function query(\Lycan\Record\Query $query)
     {
         $start = microtime(true);
-        $res = $this->connection()->query($query->__toString());        
+        $res = $this->getConnection()->query($query->__toString());        
 
         $this->logger->logQuery($query, $query->getClassName(), microtime(true) - $start);
 
@@ -78,9 +75,9 @@ class Mysql extends \Lycan\Record\Adapter
         if ( $res instanceof \mysqli_result ) {
 
             $start = microtime(true);
-            while ($row = $res->fetch_assoc())
-                $rows[] = $class::initWith($row);
-
+            
+            $rows = $res->fetch_all(MYSQLI_ASSOC);
+            
             $this->logger->logFetchTime(microtime(true) - $start);
 
             $res->free();
@@ -93,13 +90,13 @@ class Mysql extends \Lycan\Record\Adapter
     public function insert(\Lycan\Record\Query $query)
     {
         $res = $this->query($query);
-        return $res ? $this->connection()->insert_id : false;
+        return $res ? $this->getConnection()->insert_id : false;
     }
 
     public function rawSql($sql)
     {
         $start = microtime(true);
-        $res = $this->connection()->query($sql);        
+        $res = $this->getConnection()->query($sql);        
 
         $this->logger->logQuery($sql, 'Raw', microtime(true) - $start);
 

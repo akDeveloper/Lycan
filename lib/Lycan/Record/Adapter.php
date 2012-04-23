@@ -4,7 +4,7 @@
 
 namespace Lycan\Record;
 
-abstract class Adapter 
+abstract class Adapter implements Interfaces\Adapter 
 {
     /**
      * The database connection resource
@@ -53,18 +53,5 @@ abstract class Adapter
      * @access protected
      */
     protected $charset;
-
-    abstract protected function connection();
-
-    /**
-     * Escapes a string to performa a safe sql query
-     *
-     * @param string $string the string to escape
-     * @access public
-     * @abstract
-     *
-     * @return string the escaped string
-     */
-    abstract public function escapeString($string);
 
 }
