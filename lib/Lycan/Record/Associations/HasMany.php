@@ -108,19 +108,23 @@ class HasMany extends \Lycan\Record\Associations\Collection
         
         $adapter = $association::getAdapter();
 
-        $objects_to_add = $collection->map(function($k, $v) use ($to_add, $association){
-            if (in_array($v->{$association::$primary_key}, $to_add))
-                return $v;
-        }); 
+        $objects_to_add = new \Lycan\Record\Collection(array(), $this->association);
+        foreach ($collection as $row) {
+            if (in_array($row->{$association::$primary_key}, $to_add))
+                $objects_to_add[] = $row;
+        }
+
         $objects_to_add->compact();
         foreach ($objects_to_add as $v) {
             $this->add_with_offset($v, null, $adapter);
         }
         
-        $objects_to_delete = $this->all()->map(function($k, $v) use ($to_delete, $association){
-            if (in_array($v->{$association::$primary_key}, $to_delete))
-                return $v;
-        });
+        $objects_to_delete = new \Lycan\Record\Collection(array(), $this->association);
+        foreach ($collection as $row) {
+            if (in_array($row->{$association::$primary_key}, $to_delete))
+                $objects_to_delete[] = $row;
+        }
+
         $objects_to_delete->compact();
         foreach ($objects_to_delete as $k=>$v) {
             $this->delete_with_offset($v, $k, $adapter); 
