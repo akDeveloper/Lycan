@@ -15,10 +15,10 @@ class Callbacks implements Interfaces\Callbacks
         'before_destroy', 'around_destroy', 'after_destroy', 'after_commit', 'after_rollback'       
     );
     
-    protected static function reflection_properties($model)
+    protected static function reflection_properties($object)
     {
         self::$_reflection_properties = array();
-        $ref = new \ReflectionClass('\Lycan\Record\Model');
+        $ref = new \ReflectionClass(get_class($object));
         $def_prop = $ref->getDefaultProperties();
         
         foreach( self::$CALLBACKS as $callback ) {
@@ -27,18 +27,18 @@ class Callbacks implements Interfaces\Callbacks
 
                 self::$_reflection_properties[$callback] = array_merge(self::$_reflection_properties[$callback], $def_prop[$callback]);
                 
-                if ( isset($model->$callback) && $model->$callback != $def_prop[$callback])
-                    self::$_reflection_properties[$callback] = array_merge(self::$_reflection_properties[$callback], $model->$callback);
+                if ( isset($object->$callback) && $object->$callback != $def_prop[$callback])
+                    self::$_reflection_properties[$callback] = array_merge(self::$_reflection_properties[$callback], $object->$callback);
             } else {
-                if ( isset($model->$callback) && !empty($model->$callback)) {
+                if ( isset($object->$callback) && !empty($object->$callback)) {
                     if ( !isset(self::$_reflection_properties[$callback]) ) self::$_reflection_properties[$callback] = array();
-                    self::$_reflection_properties[$callback] = array_merge(self::$_reflection_properties[$callback], $model->$callback);
+                    self::$_reflection_properties[$callback] = array_merge(self::$_reflection_properties[$callback], $object->$callback);
                 }
             }
         }
     }
 
-    protected static function perform_callback_for($kind, $chain, $model)
+    protected static function perform_callback_for($kind, $chain, $object)
     {
         $obs = $norm = true;
         $callback_methods = array("{$chain}_{$kind}");
@@ -52,14 +52,14 @@ class Callbacks implements Interfaces\Callbacks
             //Call model callback method
             if ( array_key_exists($callback, self::$_reflection_properties)) {
                 foreach (self::$_reflection_properties[$callback] as $method) {
-                    $norm = $model->$method();
+                    $norm = $object->$method();
                     if ( false === $norm ) break;
                 }
             }
             
             //Call observer callbacks if exist
-            if ( $model instanceof \SplSubject )
-                $obs = $model->notifySubject($callback);
+            if ( $object instanceof \SplSubject )
+                $obs = $object->notifySubject($callback);
             if ( $obs !==false && $norm !== false ) 
                 continue;
             else
@@ -68,11 +68,11 @@ class Callbacks implements Interfaces\Callbacks
         return true;
     }  
 
-    public static function run_callbacks($kind, $model, $block=null)
+    public static function run_callbacks($kind, $object, $block=null)
     {
-        self::reflection_properties($model);
-        $res = self::perform_callback_for($kind, 'before', $model);
+        self::reflection_properties($object);
+        $res = self::perform_callback_for($kind, 'before', $object);
         $res = $res !== false ? $block() : false;
-        return $res !== false ? self::perform_callback_for($kind, 'after', $model) : false;
+        return $res !== false ? self::perform_callback_for($kind, 'after', $object) : false;
     }
 } 
