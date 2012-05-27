@@ -107,7 +107,7 @@ class HasAndBelongsToMany extends \Lycan\Record\Associations\Collection
             );
 
             $query = $adapter
-                ->getQuery($association)
+                ->createQuery($association)
                 ->from($this->join_table)
                 ->compileInsert($attributes);
             $adapter->insert($query);
@@ -141,7 +141,7 @@ class HasAndBelongsToMany extends \Lycan\Record\Associations\Collection
                 );
 
                 $query = $adapter
-                    ->getQuery($this->association)
+                    ->createQuery($this->association)
                     ->from($this->join_table)
                     ->compileInsert($attributes);
                 $adapter->insert($query);
@@ -163,13 +163,13 @@ class HasAndBelongsToMany extends \Lycan\Record\Associations\Collection
         $adapter = $association::getAdapter();
         
         $query = $adapter
-            ->getQuery($this->association)
+            ->createQuery($this->association)
             ->from($this->join_table)
             ->where(array(
                 $this->association_foreign_key=>$object->{$association::$primary_key}, 
                 $this->foreign_key => $this->primary_key_value
             ))->compileDelete();
-        $adapter->query($query);
+        $adapter->execute($query);
         
         if ($offset)
             $this->all()->offsetUnset($offset);
@@ -184,14 +184,14 @@ class HasAndBelongsToMany extends \Lycan\Record\Associations\Collection
         $adapter = $association::getAdapter();
         
         $query = $adapter
-            ->getQuery($association)
+            ->createQuery($association)
             ->from($this->join_table)
             ->where(array(
                 $this->association_foreign_key=>$to_delete, 
                 $this->foreign_key => $this->primary_key_value
             ))->compileDelete();
         
-        $adapter->query($query);
+        $adapter->execute($query);
         
         foreach ($to_delete as $id) {
             $this->all()->delete($id, $association::$primary_key);

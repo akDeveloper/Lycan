@@ -55,12 +55,12 @@ class Adapter extends \Lycan\Record\Adapter
         return $this->connection = null;
     }
 
-    public function getQuery($class_name=null, $options = array())
+    public function createQuery($class_name=null, $options = array())
     {
         return new Query($class_name, $options);
     }
 
-    public function query(\Lycan\Record\Query $query)
+    public function execute(\Lycan\Record\Query $query)
     {
         $start = microtime(true);
         $res = $this->getConnection()->query($query->__toString());        
@@ -89,7 +89,7 @@ class Adapter extends \Lycan\Record\Adapter
 
     public function insert(\Lycan\Record\Query $query)
     {
-        $res = $this->query($query);
+        $res = $this->execute($query);
         return $res ? $this->getConnection()->insert_id : false;
     }
 

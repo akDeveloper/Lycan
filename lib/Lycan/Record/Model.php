@@ -188,22 +188,22 @@ abstract class Model extends \Lycan\Validations\Validate implements \SplSubject,
     public static function findAllById(array $id, $options=array())
     {
         $options = self::_options_for_finder($options);
-        return static::getAdapter()->getQuery(get_called_class(), $options)->where(array('id' => $id))->all();
+        return static::getAdapter()->createQuery(get_called_class(), $options)->where(array('id' => $id))->all();
     }
 
     public static function find($id=null, $options=array())
     {
         $options = self::_options_for_finder($options);
         if ( null==$id )
-            return static::getAdapter()->getQuery(get_called_class(), $options);
+            return static::getAdapter()->createQuery(get_called_class(), $options);
         else
-            return static::getAdapter()->getQuery(get_called_class(), $options)->where(array('id' => (int) $id))->fetch();
+            return static::getAdapter()->createQuery(get_called_class(), $options)->where(array('id' => (int) $id))->fetch();
     }
 
     public static function all($options=array())
     {
         $options = self::_options_for_finder($options);
-        return static::getAdapter()->getQuery(get_called_class(), $options)->all();
+        return static::getAdapter()->createQuery(get_called_class(), $options)->all();
     }
 
     public static function first($options=array())
@@ -336,7 +336,7 @@ abstract class Model extends \Lycan\Validations\Validate implements \SplSubject,
             if ( empty($attributes_with_values) ) return 1;
             
             $query = $static::find()->where(array($static::$primary_key => $id))->compileUpdate($attributes_with_values);
-            $res = $static::getAdapter()->query($query);
+            $res = $static::getAdapter()->execute($query);
             $attributes->reload();
 
             return $res; 
@@ -354,7 +354,7 @@ abstract class Model extends \Lycan\Validations\Validate implements \SplSubject,
         return Callbacks::run_callbacks('create', $this, function() use ($static, $attributes, $id, $t){
             
             $attributes_with_values =  $attributes->attributesValues(!is_null($id));
-            $query  = $static::getAdapter()->getQuery($static)->compileInsert($attributes_with_values);
+            $query  = $static::getAdapter()->createQuery($static)->compileInsert($attributes_with_values);
             $new_id = $static::getAdapter()->insert($query);
             
             if ($static::$primary_key) {

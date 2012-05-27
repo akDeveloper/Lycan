@@ -322,7 +322,7 @@ class Query extends \Lycan\Record\Query
         $this->build_sql();
         $model = $this->class_name;
         
-        $records = $this->adapter()->query($this);
+        $records = $this->adapter()->execute($this);
 
         $collection = new \Lycan\Record\Collection($records, $model);
         
