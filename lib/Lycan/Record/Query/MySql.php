@@ -300,10 +300,11 @@ class MySql extends \Lycan\Record\Query
             if ( $type = \Lycan\Record\Associations::associationTypeFor($include, $model)
             ) {
                 $association = "\\Lycan\\Record\\Associations\\".Inflect::classify($type);
+                $options = $model::$$type;
                 return $association::bindObjectsToCollection($collection, 
                     $include, $model,
-                    isset($model::$$type[$include]) 
-                    ? $model::$$type[$include] 
+                    isset($options[$include]) 
+                    ? $options[$include] 
                     : array()
                 );
             }

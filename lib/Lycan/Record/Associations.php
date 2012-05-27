@@ -81,9 +81,9 @@ abstract class Associations
                     if ('belongsTo' == $assoc && isset($options['polymorphic'])) return 'BelongsToPolymorphic';
                     if ('hasMany' == $assoc && isset($options['through'])) return 'HasManyThrough';
                     if ('hasOne' == $assoc && isset($options['through'])) return 'HasOneThrough';
-                    return Inflect::classify($assoc);
+                    return $assoc;
                 }
-                return Inflect::classify($assoc);
+                return $assoc;
             }
         }
         return false;       
@@ -97,11 +97,12 @@ abstract class Associations
         
         if (false == $type) return false;
         
-        $association = "\\Lycan\\Record\\Associations\\" . $type;
-        
+        $association = "\\Lycan\\Record\\Associations\\" . Inflect::camelize($type);
+       
+        $options = $model::$$type;
         return new $association($name, $instance,
-            isset($model::$$type[$name]) 
-            ? $model::$$type[$name] 
+            isset($options[$name]) 
+            ? $options[$name] 
             : array());
     }
 
