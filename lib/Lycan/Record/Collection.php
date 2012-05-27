@@ -66,11 +66,6 @@ class Collection implements \Iterator, \Countable, \ArrayAccess
         }
     }
 
-    public function compact()
-    {
-        $this->results = array_filter($this->results);
-    }
-
     /**
      * ResultSet to array using given key/value columns
      */
