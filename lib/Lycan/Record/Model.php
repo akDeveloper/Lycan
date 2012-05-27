@@ -129,6 +129,11 @@ abstract class Model extends \Lycan\Validations\Validate implements \SplSubject,
         return null != $this->attributes->get($attribute);
     }
 
+    public function attributeExists($attribute)
+    {
+        return $this->attributes->get($attribute);
+    }
+
     public function __call($name, $args)
     {
         if ($assoc = $this->_association_for($name, isset($args[0]) ? $args[0] : null))
