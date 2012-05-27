@@ -68,7 +68,7 @@ class Adapter extends \Lycan\Record\Adapter
         $this->logger->logQuery($query, $query->getClassName(), microtime(true) - $start);
 
         if (!$res)
-            throw new \Exception("Error executing query: " . $query . "\n" . $this->connection()->error);
+            throw new \Exception("Error executing query: " . $query . "\n" . $this->getConnection()->error);
 
         $rows = array();
         $class = $query->getClassName();
