@@ -70,7 +70,7 @@ abstract class Query
 
     abstract public function select($args);
 
-    abstract public function where($condition, $operator='AND');
+    abstract public function where(array $condition, $operator='AND');
 
     abstract public function count($field=null, $as=null);
 

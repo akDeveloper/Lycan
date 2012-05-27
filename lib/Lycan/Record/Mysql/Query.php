@@ -28,16 +28,9 @@ class Query extends \Lycan\Record\Query
         return $this;       
     }
 
-    public function where($conditions, $operator='AND')
+    public function where(array $conditions, $operator='AND')
     {
-        if (is_string($conditions)) {
-            /* Example:
-             * <code>
-             * Object::find()->where("id = '1' or username = 'John'")
-             * </code>
-             */
-            $condition = $conditions;
-        } elseif (is_array($conditions)) {
+        if (is_array($conditions)) {
             /* Example:
              * <code>
              * Object::find()->where(array('id = ? and username = ?', '1', 'John') )
@@ -63,17 +56,21 @@ class Query extends \Lycan\Record\Query
                 $condition = " ( ";
                 $w = array();
                 foreach ($conditions as $key => $value) {
-                    $key = $key;
                     $k = explode('.', $key);
                     $f = ( count($k) == 2 ) ? $this->apostrophe($k[0]) . '.' . $k[1] : $this->apostrophe($this->table()) . '.' . $k[0] ;
                     if ( count($k) == 2 ) $this->_tables_for_join[$k[0]] = $k[0];
                     if (is_array($value)) {
+                        
+                        array_walk($value,function(&$value, $key){ 
+                            $value = "'$value'"; 
+                        });
+
                         $w[] = $f . ' IN ( ' . join(", ", $value) . ' )';
                     } else {
-                        $w[] = $f . ' = ' . $this->escapeString($value);
+                        $w[] = $f . ' = ' . $this->quote($this->escapeString($value));
                     }
                 }
-                $condition = $condition . join(" AND ", $w) . " ) ";
+                $condition = $condition . join(" AND ", $w) . " )";
             }
         }            
         /* Find join tables in conditions */
@@ -81,11 +78,20 @@ class Query extends \Lycan\Record\Query
         if (isset($match[1][0]))
             $this->_tables_for_join[$match[1][0]] = $match[1][0];
 
-        $this->where .= empty($this->where) ? $condition : " {$operator} " . $condition;
+        $this->where .= empty($this->where) ? $condition : " {$operator}" . $condition;
         
         return $this;
     }
 
+    public function andWhere(array $conditions)
+    {
+        return $this->where($conditions, 'AND');
+    }
+
+    public function orWhere(array $conditions)
+    {
+        return $this->where($conditions, 'OR');
+    }
     public function count($field=null, $as=null)
     {
     }
@@ -391,7 +397,7 @@ class Query extends \Lycan\Record\Query
         if (!empty($this->join_queries))
             $query .= " " . implode(" ", $this->join_queries);
         if (isset($this->where))
-            $query .= " WHERE {$this->where}";
+            $query .= " WHERE{$this->where}";
         if (isset($this->group))
             $query .= " GROUP BY {$this->group}";
         if (isset($this->order_by))
