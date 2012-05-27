@@ -93,6 +93,11 @@ class Adapter extends \Lycan\Record\Adapter
         return $res ? $this->getConnection()->insert_id : false;
     }
 
+    public function update(\Lycan\Record\Query $query)
+    {
+        $res = $this->execute($query, 'Update');
+        return $res !== false ? $this->getConnection()->affected_rows : false;
+    }
     public function rawSql($sql)
     {
         $start = microtime(true);

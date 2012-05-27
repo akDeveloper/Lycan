@@ -341,7 +341,7 @@ abstract class Model extends \Lycan\Validations\Validate implements \SplSubject,
             if ( empty($attributes_with_values) ) return 1;
             
             $query = $static::find()->where(array($static::$primary_key => $id))->compileUpdate($attributes_with_values);
-            $res = $static::getAdapter()->execute($query);
+            $res = $static::getAdapter()->update($query);
             $attributes->reload();
 
             return $res; 
