@@ -255,12 +255,12 @@ class Query extends \Lycan\Record\Query
         if (null === $value || "" === $value) {
             return "NULL";
         } elseif (!is_numeric($value)){
-            return $this->quote($this->escapeString($value));
+            return $this->quote($this->adapter()->escapeString($value));
         } else {
             return $value;
         }
     }
-
+/*
     public function compileStmtUpdate($attributes)
     {
         $data = ""; $binds = array(); $types = "";
@@ -273,7 +273,7 @@ class Query extends \Lycan\Record\Query
         $this->query = "UPDATE {$this->table()} SET {$data} WHERE {$this->where}";
         return $this;
     }
-
+*/
     private function _includes($include, $collection, $model)
     {
         if ( is_array($include) && !is_numeric(key($include)) ) {
@@ -421,7 +421,7 @@ class Query extends \Lycan\Record\Query
      */
     public function escapeString($string)
     {
-        return $this->adapter()->getConnection()->real_escape_string($string);
+        return $this->adapter()->escapeString($string);
     }
 
     public function __toString()
@@ -436,23 +436,16 @@ class Query extends \Lycan\Record\Query
 
     protected function unapostrophe($string)
     {
-        if ( substr_count($string, '`') == 2 ) 
-            return str_replace('`', '', $string);
-
-        return $string;
+        return $this->adapter()->unapostrophe($string);
     }
 
     protected function apostrophe($string)
     {
-        if ( substr_count($string, '`') == 2 ) return $string;
-
-        return '`' . $string . '`';
+        return $this->adapter()->apostrophe($string);
     }
 
     protected function quote($string)
     {
-        if ( substr_count($string, "'") == 2 ) return $string;
-
-        return "'" . $string . "'";       
+        return $this->adapter()->quote($string);
     }
 }

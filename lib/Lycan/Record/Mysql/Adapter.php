@@ -111,4 +111,31 @@ class Adapter extends \Lycan\Record\Adapter
         return $res;
     }
 
+    public function escapeString($string)
+    {
+        return $this->getConnection()->real_escape_string($string);
+    }
+
+    public function unapostrophe($string)
+    {
+        if ( substr_count($string, '`') == 2 ) 
+            return str_replace('`', '', $string);
+
+        return $string;
+    }
+
+    public function apostrophe($string)
+    {
+        if ( substr_count($string, '`') == 2 ) return $string;
+
+        return '`' . $string . '`';
+    }
+
+    public function quote($string)
+    {
+        if ( substr_count($string, "'") == 2 ) return $string;
+
+        return "'" . $string . "'";       
+    }
+
 }
