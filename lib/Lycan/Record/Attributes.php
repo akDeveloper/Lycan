@@ -59,7 +59,7 @@ class Attributes implements \Iterator, \ArrayAccess, \Serializable, \Countable
     {
         if (array_key_exists($key, $this->_storage))
             return $this[$key];
-        return null;
+        return false;
     }
 
 
