@@ -2,11 +2,11 @@
 
 /* vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4: */
 
-namespace Lycan\Record\Query;
+namespace Lycan\Record\Mysql;
 
 use Lycan\Support\Inflect;
 
-class MySql extends \Lycan\Record\Query
+class Query extends \Lycan\Record\Query
 {
     private $_select_values;
     private $_tables_for_join;

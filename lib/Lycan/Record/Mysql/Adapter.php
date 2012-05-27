@@ -2,11 +2,11 @@
 
 /* vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4: */
 
-namespace Lycan\Record\Adapter;
+namespace Lycan\Record\Mysql;
 
 use \Lycan\Record\Logger;
     
-class Mysql extends \Lycan\Record\Adapter
+class Adapter extends \Lycan\Record\Adapter
 {
     /**
      * Logger to log database queries
@@ -57,7 +57,7 @@ class Mysql extends \Lycan\Record\Adapter
 
     public function getQuery($class_name=null, $options = array())
     {
-        return new \Lycan\Record\Query\MySql($class_name, $options);
+        return new Query($class_name, $options);
     }
 
     public function query(\Lycan\Record\Query $query)

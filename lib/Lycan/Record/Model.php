@@ -372,7 +372,7 @@ abstract class Model extends \Lycan\Validations\Validate implements \SplSubject,
      */
     
     /**
-     * Overload this method to model, and write validation conditions.
+     * Overload this method to model, and set validation conditions.
      */
     protected function validations()
     {
@@ -422,7 +422,7 @@ abstract class Model extends \Lycan\Validations\Validate implements \SplSubject,
         if (null === $adapter_type || empty($options))
             throw new \InvalidArgumentException('You should define an adapter type and $options for setup.');
         
-        $adapter = "\\Lycan\\Record\\Adapter\\$adapter_type";
+        $adapter = "\\Lycan\\Record\\$adapter_type\\Adapter";
         $class = get_called_class();
         static::$adapter[$class] = new $adapter($options);
     }
