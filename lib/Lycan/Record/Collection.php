@@ -4,30 +4,107 @@
 
 namespace Lycan\Record;
 
-class Collection implements \Iterator, \Countable, \ArrayAccess
+class Collection extends \IteratorIterator implements \Countable, \ArrayAccess
 {
 
+    public static $BATCH_SIZE = 1000;
+
+    private $_page_size    = 0;
+    private $_current_page = 0;
+    private $_deleted      = array();
+
     protected $results = array();
+
     protected $model;
 
-    protected $caching=array();
-
-    public function __construct($results = array(), $model=null)
+    public function __construct(\Iterator $iterator, $model=null)
     {
-        $this->results = $results;
+        parent::__construct($iterator);
         $this->model = $model;
+        $this->_fetch();
+
     }
 
+    public function current()
+    {
+        return current($this->results);
+    }
+
+    public function key()
+    {
+        return key($this->results);
+    }
+
+    public function next()
+    {
+        if ($this->key() >= ($this->_current_page + 1) * static::$BATCH_SIZE ) {
+            $this->_current_page++;
+            $this->_fetch();
+        }
+        next($this->results);
+
+    }
+
+    public function rewind()
+    {
+        if ($this->_current_page !== 0 )
+            $this->_fetch();
+        $this->_current_page = 0;
+        reset($this->results);
+    }
+
+    public function valid()
+    {
+        return (current($this->results) !== false);
+    }
+
+    public function count()
+    {
+        return count($this->results);
+    }    
+    
+    public function offsetExists($key)
+    {
+        if ($key > $this->_current_max_offset()) {
+            $this->_current_page = floor($key/static::$BATCH_SIZE);
+            $this->_fetch();
+        }
+        return isset($this->results[$key]);
+    }
+
+    public function offsetGet($key)
+    {
+        if ($key > $this->_current_max_offset() 
+            || $key < $this->_current_max_offset() - static::$BATCH_SIZE) 
+        {
+            $this->_current_page = floor($key/static::$BATCH_SIZE);
+            $this->_fetch();
+        }
+        return $this->results[$key];
+    }
+
+    public function offsetSet($key, $value)
+    {
+        if ($key === null) {
+            $k = array_search($key, $this->_deleted);
+            if (false!==$k) unset($this->_deleted[$k]);
+            return $this->results[] = $value;
+        } else {
+            return $this->results[$key] = $value;
+        }       
+    }
+
+    public function offsetUnset($key)
+    {
+        $this->_deleted[] = $key;
+        unset($this->results[$key]); 
+    }
     /**
      * Returns first result in set
      */
     public function first()
     {
-        if (!empty($this->results)) {
-            return $this->_get_item(reset($this->results),key($this->results));
-        }
-
-        return null;
+        return reset($this->results);
     }
 
     /**
@@ -35,11 +112,7 @@ class Collection implements \Iterator, \Countable, \ArrayAccess
      */
     public function last()
     {
-        if (!empty($this->results)) {
-            return $this->_get_item(end($this->results), key($this->results));
-        }
-
-        return null;
+        return end($this->results);
     }
 
     public function isEmpty()
@@ -55,21 +128,18 @@ class Collection implements \Iterator, \Countable, \ArrayAccess
     public function each_with_index(\Closure $block) 
     {
         foreach ($this->results as $key => $value) {
-            $block($key, $this->_get_item($value, $key));
+            $block($key, $this->results[$key]);
         }
     }
 
     public function each(\Closure $block)
     {
         foreach ($this->results as $key => $value) {
-            $block($this->_get_item($value, $key));
+            $block($this->results[$key]);
         }
     }
 
-    /**
-     * ResultSet to array using given key/value columns
-     */
-    public function toArray($keyColumn = null, $valueColumn = null)
+    public function toArray($keyColumn=null, $valueColumn=null)
     {
         // Both empty
         if (null === $keyColumn && null === $valueColumn) {
@@ -79,46 +149,49 @@ class Collection implements \Iterator, \Countable, \ArrayAccess
         } elseif (null !== $keyColumn && null === $valueColumn) {
             $return = array();
             foreach ($this->results as $k=>$row) {
-                if (array_key_exists($keyColumn, $row))
-                    $return[$k] = $row[$keyColumn];
+                if (isset($row->$keyColumn))
+                    $return[$k] = $row->$keyColumn;
             }
 
             // Both key and value columns filled in
         } else {
             $return = array();
             foreach ($this->results as $row) {
-                $return[$row[$keyColumn]] = $row[$valueColumn];
+                $return[$row->$keyColumn] = $row->$valueColumn;
             }
         }
 
         return $return;
     }
 
+    public function toJson()
+    {
+
+    }
+
     public function select($search_value, $field_value)
     {
-        $return = array();
-        
-        $return = array_filter($this->results, function($row) use ($search_value, $field_value){
-            return $search_value == $row[$field_value];
+        $array = array(null);
+        $array = array_filter($this->results, function($row) use ($search_value, $field_value){
+            return $search_value == $row->$field_value;
         });
-        
-        return new self(array_values($return));
+        return $array;
     }
 
     public function detect($search_value, $field_value)
     {
-        $return = array(null);
-        $return = array_filter($this->results, function($row) use ($search_value, $field_value){
-            return $search_value == $row[$field_value];
+        $array = array(null);
+        $array = array_filter($this->results, function($row) use ($search_value, $field_value){
+            return $search_value == $row->$field_value;
         });
-        return $this->_get_item(current($return),key($return));
+        return reset($array);
     }
 
     public function delete($search_value, $field_value)
     {
         $array = array();
         $array = array_filter($this->results, function($row) use ($search_value, $field_value){
-            return $search_value == $row[$field_value];
+            return $search_value == $row->$field_value;
         });
         if (!empty($array)) {
             $key = key($array);
@@ -126,87 +199,22 @@ class Collection implements \Iterator, \Countable, \ArrayAccess
         }
     }
 
-    public function toJson()
+    private function _current_max_offset()
     {
-        return json_encode($this->results);
+        return ($this->_current_page + 1) * static::$BATCH_SIZE;
     }
 
-    // SPL - Countable functions
-    // ----------------------------------------------
-
-    /**
-     * Get a count of all the records in the result set
-     */
-    public function count()
+    // Should be called once per page
+    private function _fetch()
     {
-        return count($this->results);
-    }
-
-    // ----------------------------------------------
-    // SPL - Iterator functions
-    // ----------------------------------------------
-    public function current()
-    {
-        return $this->_get_item(current($this->results), key($this->results));
-    }
-
-    public function key()
-    {
-        return key($this->results);
-    }
-
-    public function next()
-    {
-        next($this->results);
-    }
-
-    public function rewind()
-    {
-        reset($this->results);
-    }
-
-    public function valid()
-    {
-        return (current($this->results) !== FALSE);
-    }
-
-    // ----------------------------------------------
-    // SPL - ArrayAccess functions
-    // ----------------------------------------------
-    public function offsetExists($key)
-    {
-        return isset($this->results[$key]);
-    }
-
-    public function offsetGet($key)
-    {
-        return $this->_get_item($this->results[$key], $key);
-    }
-
-    public function offsetSet($key, $value)
-    {
-        if ($key === null) {
-            return $this->results[] = $value->getAttributes();
-        } else {
-            $this->caching[$key] = $value;
-            return $this->results[$key] = $value->getAttributes();
+        $model  = $this->model;
+        $rows   = $this->getInnerIterator();
+        $offset = $this->_current_page * static::$BATCH_SIZE;
+        $this->results = array();
+        for ( $i=$offset; $i <= ($this->_current_page + 1) * static::$BATCH_SIZE; $i++ ) {
+            if (in_array($i, $this->_deleted)) continue;
+            if ($rows->offsetExists($i)) $this->results[$i] = $model::initWith($rows[$i]);
         }
     }
 
-    public function offsetUnset($key)
-    {
-        unset($this->results[$key]);
-        unset($this->caching[$key]);
-    }
-
-    // ----------------------------------------------
-    
-    private function _get_item($item, $key=null) 
-    {
-        if (array_key_exists($key, $this->caching))
-            return $this->caching[$key];
-        $model = $this->model;
-        $this->caching[$key] = $model::initWith($item);
-        return $this->caching[$key];
-    }
 }

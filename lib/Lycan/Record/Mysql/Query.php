@@ -324,8 +324,10 @@ class Query extends \Lycan\Record\Query
         
         $records = $this->adapter()->execute($this);
 
-        $collection = new \Lycan\Record\Collection($records, $model);
-        
+        #$collection = new \Lycan\Record\Collection($records, $model);
+        $result = new ResultIterator($records);
+        $collection = new \Lycan\Record\Collection($result, $model);
+
         if ( !$collection->isEmpty() && !empty($this->includes) ) {
             // include extra queries for fetching associations
             foreach( $this->includes as $k=>$include ) {

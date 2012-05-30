@@ -70,18 +70,19 @@ class Adapter extends \Lycan\Record\Adapter
         if (!$res)
             throw new \Exception("Error executing query: " . $query . "\n" . $this->getConnection()->error);
 
-        $rows = array();
-        $class = $query->getClassName();
-        if ( $res instanceof \mysqli_result ) {
+        #$rows = array();
+        #$class = $query->getClassName();
+        if ($res instanceof \mysqli_result) {
 
-            $start = microtime(true);
+            #$start = microtime(true);
             
-            $rows = $res->fetch_all(MYSQLI_ASSOC);
+            #$rows = $res->fetch_all(MYSQLI_ASSOC);
             
-            $this->logger->logFetchTime(microtime(true) - $start);
+            #$this->logger->logFetchTime(microtime(true) - $start);
 
-            $res->free();
-            return $rows;
+            #$res->free();
+            #return $rows;
+            return $res;
         } else {
             return $res;
         }
