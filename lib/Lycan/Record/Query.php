@@ -82,7 +82,7 @@ abstract class Query
 
     abstract public function groupBy($args);
 
-    abstract public function orderBy($args);
+    abstract public function orderBy($field, $order);
 
     abstract public function all();
     

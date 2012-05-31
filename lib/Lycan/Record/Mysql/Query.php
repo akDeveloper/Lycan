@@ -43,7 +43,7 @@ class Query extends \Lycan\Record\Query
             {
                 $condition = " ( " . array_shift($conditions) . " ) ";
                 foreach ($conditions as $value) {
-                    $value = $this->escapeString($value);
+                    $value = $this->quote($this->escapeString($value));
                     $condition = preg_replace('|\?|', $value, $condition, 1);
                 }
             }  else {
@@ -92,8 +92,15 @@ class Query extends \Lycan\Record\Query
     {
         return $this->where($conditions, 'OR');
     }
+
     public function count($field=null, $as=null)
     {
+        $as = $as ?: "($field)_count";
+        $this->count = null ===  $this->count 
+            ? "COUNT($field) as $as"
+            : $this->count . ", COUNT($field) as $as";
+
+       return $this; 
     }
 
     public function limit($count)
@@ -117,20 +124,16 @@ class Query extends \Lycan\Record\Query
     public function groupBy($args)
     {
         $this->group_by = $args;
+
         return $this;
     }
 
-    public function orderBy($args)
+    public function orderBy($field, $order)
     {
-        if (is_string($args)) {
-            $this->order_by = $args;
-        } elseif (is_array($args)) {
-            if (!isset($args['field']) && !isset($args['order']))
-                return $this;
-            $field = $args['field'];
-            $order = strtolower($args['order']) == 'desc' || strtolower($order['order']) == 'asc' ? $args['order'] : '';
-            $this->order_by = "{$field} ${order}";
-        }
+        $this->order_by = null === $this->order_by 
+            ? "{$field} ${order}" 
+            : $this->order_by . "{$field} ${order}";
+
         return $this;
     }
 
@@ -214,7 +217,7 @@ class Query extends \Lycan\Record\Query
     {
         $class_name = $this->class_name;
         $this->limit(1);
-        $this->orderBy("{$class_name::$primary_key} DESC");
+        $this->orderBy("{$class_name::$primary_key}", "DESC");
         $this->fetch_method = 'one';
         return $this->_fetch_data();
     }
@@ -327,7 +330,7 @@ class Query extends \Lycan\Record\Query
         #$collection = new \Lycan\Record\Collection($records, $model);
         $result = new ResultIterator($records);
         $collection = new \Lycan\Record\Collection($result, $model);
-
+        
         if ( !$collection->isEmpty() && !empty($this->includes) ) {
             // include extra queries for fetching associations
             foreach( $this->includes as $k=>$include ) {
@@ -383,7 +386,7 @@ class Query extends \Lycan\Record\Query
 
     protected function build_sql()
     {
-        if (null != $this->query) return $this->query;
+        #if (null != $this->query) return $this->query;
 
         $class = $this->class_name;
 
