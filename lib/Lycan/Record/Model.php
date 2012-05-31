@@ -85,7 +85,7 @@ abstract class Model extends \Lycan\Validations\Validate implements \SplSubject,
             $this->attributes->assign($attributes, array('new_record'=>$this->new_record));       
     }
 
-    public static function initWith($attributes, $options=array())
+    public static function initWith(array $attributes, $options=array())
     {
         $options['new_record'] = false;
         return new static($attributes, $options);

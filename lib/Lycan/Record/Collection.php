@@ -175,7 +175,7 @@ class Collection extends \IteratorIterator implements \Countable, \ArrayAccess
         $array = array_filter($this->results, function($row) use ($search_value, $field_value){
             return $search_value == $row->$field_value;
         });
-        return $array;
+        return new static(new \ArrayIterator($array), $this->model);
     }
 
     public function detect($search_value, $field_value)
@@ -213,7 +213,11 @@ class Collection extends \IteratorIterator implements \Countable, \ArrayAccess
         $this->results = array();
         for ( $i=$offset; $i <= ($this->_current_page + 1) * static::$BATCH_SIZE; $i++ ) {
             if (in_array($i, $this->_deleted)) continue;
-            if ($rows->offsetExists($i)) $this->results[$i] = $model::initWith($rows[$i]);
+            if ($rows->offsetExists($i)) {
+                $this->results[$i] = ($rows[$i] instanceof \Lycan\Record\Model) 
+                    ? $rows[$i]
+                    : $model::initWith($rows[$i]);
+            }
         }
     }
 
