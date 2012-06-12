@@ -175,7 +175,7 @@ class Collection extends \IteratorIterator implements \Countable, \ArrayAccess
         $array = array_filter($this->results, function($row) use ($search_value, $field_value){
             return $search_value == $row->$field_value;
         });
-        return new static(new \ArrayIterator($array), $this->model);
+        return new static(new \ArrayIterator(array_values($array)), $this->model);
     }
 
     public function detect($search_value, $field_value)
