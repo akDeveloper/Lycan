@@ -396,15 +396,15 @@ class Query extends \Lycan\Record\Query
         $query = isset($this->select) ? "SELECT {$this->select}" : "SELECT *";
         if (isset($this->_sum))
             $query .= ", {$this->sum}";
-        if (isset($this->_count))
+        if (isset($this->count))
             $query .= ", {$this->count}";
         $query .= " FROM {$this->apostrophe($this->table())}";
         if (!empty($this->join_queries))
             $query .= " " . implode(" ", $this->join_queries);
         if (isset($this->where))
             $query .= " WHERE{$this->where}";
-        if (isset($this->group))
-            $query .= " GROUP BY {$this->group}";
+        if (isset($this->group_by))
+            $query .= " GROUP BY {$this->group_by}";
         if (isset($this->order_by))
             $query .= " ORDER BY {$this->order_by}";
         if (isset($this->having))
